@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Query Forge — Hunting Query Generator</title>
+  <meta name="description" content="Generador de queries de hunting parametrizadas (KQL · CSQL · XQL) a partir de IOCs.">
+  <link rel="stylesheet" href="css/base.css?v=3">
+  <link rel="stylesheet" href="css/forge.css?v=3">
+</head>
+<body>
+
+  <div class="v-hero">
+    <h1 class="v-hero-title" onclick="forgeReset()" title="Volver al inicio">Query Forge</h1>
+    <div class="v-hero-sub">Generador de queries de hunting parametrizadas</div>
+  </div>
+
+  <div class="tlab-layout">
+
+    <!-- ─────────────────────── SIDEBAR ─────────────────────── -->
+    <aside class="tlab-sidebar">
+      <div class="tlab-sidebar-head">
+        <span class="tlab-sb-title"><i data-lucide="layers"></i>Plataformas</span>
+      </div>
+
+      <!-- KQL · Defender XDR -->
+      <div class="tlab-source-item" id="forge-src-kql">
+        <div class="tlab-source-head" onclick="forgeToggleLang('kql')">
+          <span class="tlab-source-icon" id="forge-arrow-kql"><i data-lucide="chevron-right"></i></span>
+          <span class="tlab-source-name">KQL</span>
+          <span class="forge-platform-badge">Defender XDR</span>
+        </div>
+        <div id="forge-kql-body" style="display:none;padding:0;border-top:none;background:transparent">
+          <div class="tlab-source-item" id="forge-src-ioc" style="border-bottom:none">
+            <div class="tlab-source-head" onclick="forgeSelectTool('kql-ioc')" id="forge-ioc-head" style="padding-left:26px">
+              <span class="tlab-source-icon" id="forge-arrow-ioc"><i data-lucide="chevron-right"></i></span>
+              <span class="tlab-source-name" style="font-size:12px">IOC Hunter</span>
+            </div>
+            <div class="tlab-source-body" id="forge-ioc-body" style="display:none">
+              <div class="tlab-config-section">
+                <label class="tlab-config-label" for="forge-lookback">Lookback</label>
+                <select id="forge-lookback" class="u-select">
+                  <option value="30d">30 días</option>
+                  <option value="60d">60 días</option>
+                  <option value="90d" selected>90 días</option>
+                  <option value="180d">180 días</option>
+                </select>
+              </div>
+              <div class="tlab-config-section">
+                <button class="tlab-analyze-btn" onclick="forgeGenerate()"><i data-lucide="play"></i> Generar KQL</button>
+                <button class="forge-clear-link" onclick="forgeClear()">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CSQL · CrowdStrike -->
+      <div class="tlab-source-item" id="forge-src-cs">
+        <div class="tlab-source-head" onclick="forgeToggleLang('cs')">
+          <span class="tlab-source-icon" id="forge-arrow-cs"><i data-lucide="chevron-right"></i></span>
+          <span class="tlab-source-name">CSQL</span>
+          <span class="forge-platform-badge">CrowdStrike</span>
+        </div>
+        <div id="forge-cs-body" style="display:none;padding:0;border-top:none;background:transparent">
+          <div class="tlab-source-item" id="forge-src-cs-ioc" style="border-bottom:none">
+            <div class="tlab-source-head" onclick="forgeCsSelectTool('cs-ioc')" id="forge-cs-ioc-head" style="padding-left:26px">
+              <span class="tlab-source-icon" id="forge-arrow-cs-ioc"><i data-lucide="chevron-right"></i></span>
+              <span class="tlab-source-name" style="font-size:12px">IOC Hunter</span>
+            </div>
+            <div class="tlab-source-body" id="forge-cs-ioc-body" style="display:none">
+              <div class="tlab-config-section">
+                <label class="tlab-config-label" for="forge-cs-lookback">Lookback</label>
+                <select id="forge-cs-lookback" class="u-select">
+                  <option value="1h">1 hora</option>
+                  <option value="3h">3 horas</option>
+                  <option value="12h">12 horas</option>
+                  <option value="24h">24 horas</option>
+                  <option value="48h">48 horas</option>
+                  <option value="7d" selected>7 días</option>
+                  <option value="30d">30 días</option>
+                  <option value="90d">90 días</option>
+                </select>
+              </div>
+              <div class="tlab-config-section">
+                <button class="tlab-analyze-btn" onclick="forgeCsGenerate()"><i data-lucide="play"></i> Generar CSQL</button>
+                <button class="forge-clear-link" onclick="forgeCsClear()">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XQL · Cortex XDR -->
+      <div class="tlab-source-item" id="forge-src-xql">
+        <div class="tlab-source-head" onclick="forgeToggleLang('xql')">
+          <span class="tlab-source-icon" id="forge-arrow-xql"><i data-lucide="chevron-right"></i></span>
+          <span class="tlab-source-name">XQL</span>
+          <span class="forge-platform-badge">Cortex XDR</span>
+        </div>
+        <div id="forge-xql-body" style="display:none;padding:0;border-top:none;background:transparent">
+          <div class="tlab-source-item" id="forge-src-xql-ioc" style="border-bottom:none">
+            <div class="tlab-source-head" onclick="forgeXqlSelectTool('xql-ioc')" id="forge-xql-ioc-head" style="padding-left:26px">
+              <span class="tlab-source-icon" id="forge-arrow-xql-ioc"><i data-lucide="chevron-right"></i></span>
+              <span class="tlab-source-name" style="font-size:12px">IOC Hunter</span>
+            </div>
+            <div class="tlab-source-body" id="forge-xql-ioc-body" style="display:none">
+              <div class="tlab-config-section">
+                <label class="tlab-config-label" for="forge-xql-lookback">Lookback</label>
+                <select id="forge-xql-lookback" class="u-select">
+                  <option value="1h">1 hora</option>
+                  <option value="3h">3 horas</option>
+                  <option value="12h">12 horas</option>
+                  <option value="24h">24 horas</option>
+                  <option value="48h">48 horas</option>
+                  <option value="7d" selected>7 días</option>
+                  <option value="30d">30 días</option>
+                </select>
+              </div>
+              <div class="tlab-config-section">
+                <button class="tlab-analyze-btn" onclick="forgeXqlGenerate()"><i data-lucide="play"></i> Generar XQL</button>
+                <button class="forge-clear-link" onclick="forgeXqlClear()">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ─────────────────────── MAIN ─────────────────────── -->
+    <main class="tlab-main">
+
+      <!-- Empty state -->
+      <div id="forge-workspace-empty" class="forge-ws-empty">
+        <div class="forge-ws-empty-inner">
+          <div class="forge-ws-empty-icon"><i data-lucide="layers" style="width:36px;height:36px"></i></div>
+          <div class="forge-ws-empty-title">Elige una plataforma</div>
+          <div class="forge-ws-empty-hint">Selecciona KQL, CSQL o XQL en el panel izquierdo para generar queries de hunting parametrizadas.</div>
+        </div>
+      </div>
+
+      <!-- KQL workspace -->
+      <div id="forge-workspace-kql-ioc" class="forge-ws">
+        <div class="forge-ws-header">
+          <span class="forge-ws-title">KQL · IOC Hunter</span>
+          <button class="forge-help-btn" onclick="forgeToggleHelp(this)" title="Cómo funciona" aria-label="Cómo funciona"><i data-lucide="circle-help"></i></button>
+        </div>
+        <div class="forge-ws-body">
+          <div class="forge-ws-input-col">
+            <textarea id="forge-input" class="forge-ws-textarea" placeholder="1.2.3[.]4&#10;evil[.]com&#10;5d41402abc4b2a76b9719d911017c592"></textarea>
+          </div>
+          <div class="forge-ws-output-col">
+            <div id="forge-stats" class="forge-ws-stats forge-muted"></div>
+            <div id="forge-output" class="forge-ws-output"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CSQL workspace -->
+      <div id="forge-workspace-cs-ioc" class="forge-ws">
+        <div class="forge-ws-header">
+          <span class="forge-ws-title">CSQL · IOC Hunter</span>
+          <button class="forge-help-btn" onclick="forgeToggleHelp(this)" title="Cómo funciona" aria-label="Cómo funciona"><i data-lucide="circle-help"></i></button>
+        </div>
+        <div class="forge-ws-body">
+          <div class="forge-ws-input-col">
+            <textarea id="forge-cs-input" class="forge-ws-textarea" placeholder="1.2.3[.]4&#10;evil[.]com&#10;5d41402abc4b2a76b9719d911017c592"></textarea>
+          </div>
+          <div class="forge-ws-output-col">
+            <div id="forge-cs-stats" class="forge-ws-stats forge-muted"></div>
+            <div id="forge-cs-output" class="forge-ws-output"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XQL workspace -->
+      <div id="forge-workspace-xql-ioc" class="forge-ws">
+        <div class="forge-ws-header">
+          <span class="forge-ws-title">XQL · IOC Hunter</span>
+          <button class="forge-help-btn" onclick="forgeToggleHelp(this)" title="Cómo funciona" aria-label="Cómo funciona"><i data-lucide="circle-help"></i></button>
+        </div>
+        <div class="forge-ws-body">
+          <div class="forge-ws-input-col">
+            <textarea id="forge-xql-input" class="forge-ws-textarea" placeholder="1.2.3[.]4&#10;evil[.]com&#10;5d41402abc4b2a76b9719d911017c592"></textarea>
+          </div>
+          <div class="forge-ws-output-col">
+            <div id="forge-xql-stats" class="forge-ws-stats forge-muted"></div>
+            <div id="forge-xql-output" class="forge-ws-output"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Popover de ayuda (compartido por los 3 workspaces) -->
+  <div id="forge-help-popover" class="forge-help-popover" hidden>
+    <div class="forge-help-title">Cómo funciona</div>
+    <ul class="forge-help-list">
+      <li><strong>Pega los IOCs</strong> uno por línea. Mezcla libre de IPs, dominios y hashes.</li>
+      <li><strong>Defanging</strong> aceptado: <code>1.2.3[.]4</code>, <code>hxxps://evil[.]com</code>.</li>
+      <li><strong>Lookback</strong> es el rango temporal de búsqueda en el SIEM.</li>
+      <li><strong>SHA1</strong> no soportado en CrowdStrike (se omite automáticamente).</li>
+    </ul>
+  </div>
+
+  <script src="js/lucide.min.js?v=1"></script>
+  <script src="js/forge.js?v=3"></script>
+  <script src="js/core.js?v=1"></script>
+
+</body>
+</html>

@@ -1,0 +1,276 @@
+/* ════════════════════════════════════════════════════════════════
+   Query Forge — base.css
+   Variables del tema, reset, tipografía, botones y componentes
+   base (botones, select, toast).
+   ════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Superficies — negro carbón con jerarquía de elevación */
+  --bg:  #0c0c0e;
+  --bg2: #141418;
+  --bg3: #1c1c22;
+  --border:   #26262c;
+  --bord2:    #32323a;
+  --border-rgb: 38,38,44;
+
+  /* Acento marca (naranja) */
+  --teal:     #fe4a23;
+  --teal-rgb: 254,74,35;
+
+  /* Texto — blanco dominante */
+  --text:  #ffffff;
+  --text2: #a0a0aa;
+  --text2-rgb: 160,160,170;
+  --muted: #5c5c66;
+  --muted-rgb: 92,92,102;
+  --muted2: #28282e;
+
+  /* Estados (no se usan en MVP pero el cluster Forge los referencia) */
+  --red:   #ff4d57;  --red-rgb:   255,77,87;
+  --gold:  #ffb547;  --gold-rgb:  255,181,71;
+  --green: #4dd68a;  --green-rgb: 77,214,138;
+
+  /* Tipografía */
+  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --font-data: 'SF Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* Radios */
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 18px;
+  --radius-pill: 100px;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+
+  /* Sombras profundas para el glass */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.25);
+  --shadow-md: 0 6px 22px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
+  --shadow-lg: 0 24px 60px rgba(0,0,0,.7), 0 6px 16px rgba(0,0,0,.45);
+
+  --focus-ring: 0 0 0 3px rgba(var(--teal-rgb),.28);
+  --tr: .15s ease;
+}
+
+/* ── Reset mínimo ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Glow ambiental sutil — presencia de marca, no protagonismo */
+body::before {
+  content: "";
+  position: fixed;
+  top: -240px;
+  left: -240px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(var(--teal-rgb),.10), transparent 65%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scrollbar — sutil, ancho fino */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--bord2);
+  border-radius: var(--radius);
+}
+
+/* Focus visible global */
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Hero header del producto ─────────────────────────────── */
+.v-hero {
+  padding: 28px 36px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  position: relative;
+  z-index: 1;
+}
+.v-hero-title {
+  font-family: var(--font-ui);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin: 0 0 4px;
+  display: inline-block;
+  cursor: pointer;
+  transition: color var(--tr);
+  user-select: none;
+}
+.v-hero-title:hover {
+  color: rgba(255,255,255,.78);
+}
+.v-hero-title:active {
+  color: rgba(255,255,255,.65);
+}
+.v-hero-sub {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: rgba(255,255,255,.5);
+}
+
+/* ── Botones Nivel B (CTA) — .btn-primary / .tlab-analyze-btn ─
+   Único botón con tinte naranja. Gradient suave, sin lift, sin bold. */
+.btn-primary,
+.tlab-analyze-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  letter-spacing: 0;
+  font-size: 12.5px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(var(--teal-rgb),.22), rgba(var(--teal-rgb),.10));
+  border: 1px solid rgba(var(--teal-rgb),.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 1px 2px rgba(0,0,0,.25);
+  transition: background var(--tr), border-color var(--tr), box-shadow var(--tr), transform var(--tr);
+}
+.btn-primary:hover,
+.tlab-analyze-btn:hover {
+  background: linear-gradient(180deg, rgba(var(--teal-rgb),.30), rgba(var(--teal-rgb),.14));
+  border-color: rgba(var(--teal-rgb),.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 2px 6px rgba(var(--teal-rgb),.18);
+}
+.btn-primary:active,
+.tlab-analyze-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.2);
+}
+.btn-primary svg, .btn-primary i,
+.tlab-analyze-btn svg, .tlab-analyze-btn i {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  opacity: .9;
+}
+
+/* ── Botones Nivel B secundarios — glass blanco ─────────────── */
+.btn-secondary,
+.tlab-extract-btn,
+.forge-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12.5px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--text);
+  transition: background var(--tr), border-color var(--tr), box-shadow var(--tr);
+}
+.btn-secondary:hover,
+.tlab-extract-btn:hover,
+.forge-copy-btn:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035));
+  border-color: rgba(255,255,255,.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -1px 0 rgba(0,0,0,.2),
+    0 0 0 1px rgba(255,255,255,.06),
+    0 6px 18px rgba(0,0,0,.4);
+}
+.btn-secondary svg, .btn-secondary i,
+.tlab-extract-btn svg, .tlab-extract-btn i,
+.forge-copy-btn svg, .forge-copy-btn i {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+}
+
+button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ── Select unificado (lookback) ──────────────────────────── */
+.u-select {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--text);
+  font-family: var(--font-data);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--tr), box-shadow var(--tr);
+}
+.u-select:hover {
+  border-color: rgba(255,255,255,.18);
+}
+.u-select:focus {
+  border-color: rgba(255,255,255,.28);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+}
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: linear-gradient(180deg, rgba(28,28,34,.92), rgba(20,20,24,.92));
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+  z-index: 2000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all .3s ease;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 16px 48px rgba(0,0,0,.55);
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.toast.ok  { border-color: rgba(var(--teal-rgb),.5); }
+.toast.err { border-color: rgba(var(--red-rgb),.5); color: var(--red); }
