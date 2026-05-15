@@ -2,7 +2,7 @@
 
 Generador de queries de hunting parametrizadas para los principales SIEM/EDR. Pega IOCs, elige plataforma y lookback, copia la query lista para tu consola.
 
-**Demo:** _pendiente de despliegue_
+**Demo:** https://osnolanarf.github.io/queryforge/
 
 ## Plataformas soportadas
 
