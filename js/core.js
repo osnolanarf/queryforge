@@ -40,4 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof forgeShowEmpty === 'function') {
     forgeShowEmpty();
   }
+  if (typeof forgeIoaBindToggles === 'function') {
+    forgeIoaBindToggles();
+  }
 });

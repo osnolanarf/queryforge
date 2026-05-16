@@ -245,6 +245,32 @@ button:disabled {
   box-shadow: 0 0 0 3px rgba(255,255,255,.06);
 }
 
+/* ── Input unificado (hermano de u-select para texto libre) ── */
+.u-input {
+  width: 100%;
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--text);
+  font-family: var(--font-data);
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--tr), box-shadow var(--tr), background var(--tr);
+}
+.u-input:hover {
+  border-color: rgba(255,255,255,.18);
+}
+.u-input:focus {
+  border-color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+}
+.u-input::placeholder {
+  color: rgba(255,255,255,.28);
+  font-family: var(--font-data);
+}
+
 /* ── Toast ────────────────────────────────────────────────── */
 .toast {
   position: fixed;

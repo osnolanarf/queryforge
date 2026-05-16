@@ -101,8 +101,9 @@
   display: flex;
 }
 
-/* Sub-row (IOC Hunter) — neutralizar inline bg=var(--bg3) */
+/* Sub-row (IOC/IOA Hunter) — neutralizar inline bg=var(--bg3) */
 #forge-ioc-head,
+#forge-ioa-head,
 #forge-cs-ioc-head,
 #forge-xql-ioc-head {
   background: transparent !important;
@@ -217,6 +218,275 @@
   border-right: 1px solid rgba(255,255,255,.06);
   display: flex;
   flex-direction: column;
+}
+
+/* Variante para formularios (IOA Hunter): más ancho, scroll vertical */
+.forge-ws-input-col-form {
+  width: 360px;
+  overflow-y: auto;
+}
+.forge-form {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px 28px;
+  gap: 24px;
+}
+
+/* Jerarquía Apple: section title > row label.
+   Section conserva el énfasis (600/1.8/.5); las rows se sirven con menor peso
+   (500/1.2/.42) para que el ojo lea primero los grupos y luego los campos. */
+.forge-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.forge-form-section-title {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+/* Subgroup: par de campos relacionados (Proceso + Cmdline). Gap interno
+   tighter para señalar "pareja"; el gap del section actúa entre subgroups. */
+.forge-form-subgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.forge-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Hairline lateral en el row hijo del subgroup (Cmdline) — pista visual de
+   subordinación, no indent (preserva la alineación del input). */
+.forge-form-row--child {
+  position: relative;
+}
+.forge-form-row--child::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 4px;
+  bottom: 6px;
+  width: 1px;
+  background: rgba(255,255,255,.06);
+  border-radius: 1px;
+}
+
+.forge-form-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 18px;
+}
+.forge-form-row-head .tlab-config-label {
+  margin-bottom: 0;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  color: rgba(255,255,255,.42);
+  transition: color var(--tr);
+}
+/* Cuando el row tiene foco dentro, el label se reactiva — micro-feedback Apple */
+.forge-form-row:focus-within .tlab-config-label {
+  color: rgba(255,255,255,.72);
+}
+.forge-form-textarea {
+  resize: vertical;
+  min-height: 44px;
+  line-height: 1.5;
+  font-family: var(--font-data);
+}
+
+/* ── Segmented control de tablas (header workspace IOA) ────── */
+.forge-ioa-tables {
+  display: inline-flex;
+  margin-left: 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 999px;
+  padding: 3px;
+}
+.forge-ioa-table-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .1px;
+  color: rgba(255,255,255,.55);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.forge-ioa-table-btn:hover:not(.is-disabled):not(.active) {
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+}
+.forge-ioa-table-btn.active {
+  background: rgba(var(--teal-rgb),.16);
+  color: rgba(var(--teal-rgb),.98);
+  font-weight: 600;
+}
+.forge-ioa-table-btn.is-disabled {
+  color: rgba(255,255,255,.22);
+  cursor: not-allowed;
+}
+
+/* ── Segmented control inline Cualquiera/Todos (cmdline) ───── */
+.forge-ioa-mode {
+  display: inline-flex;
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 999px;
+  padding: 2px;
+}
+.forge-ioa-mode-btn {
+  background: transparent;
+  border: none;
+  padding: 2px 9px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.forge-ioa-mode-btn:hover:not(.active) {
+  color: var(--text);
+}
+.forge-ioa-mode-btn.active {
+  background: rgba(var(--teal-rgb),.16);
+  color: rgba(var(--teal-rgb),.98);
+}
+
+/* ── Chip Y/O por campo (combinar con AND/OR a nivel de query) ── */
+.forge-form-row-toggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.forge-ioa-join {
+  display: inline-flex;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 999px;
+  padding: 1px;
+}
+.forge-ioa-join-btn {
+  background: transparent;
+  border: none;
+  padding: 1px 7px;
+  font-family: var(--font-ui);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  color: rgba(255,255,255,.28);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  min-width: 14px;
+}
+.forge-ioa-join-btn:hover:not(.active) {
+  color: rgba(255,255,255,.7);
+}
+.forge-ioa-join-btn.active[data-join="and"] {
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.7);
+}
+.forge-ioa-join-btn.active[data-join="or"] {
+  background: rgba(var(--teal-rgb),.18);
+  color: rgba(var(--teal-rgb),.98);
+}
+/* Cuando un campo está marcado OR, refuerza el border del chip */
+.forge-ioa-join:has(.forge-ioa-join-btn.active[data-join="or"]) {
+  border-color: rgba(var(--teal-rgb),.3);
+}
+
+/* ── Fila disabled (v2 placeholders en IOA LQL: Abuelo, Cmdline padre) ── */
+.forge-form-row--disabled .tlab-config-label {
+  color: rgba(255,255,255,.22);
+}
+.forge-form-row--disabled .u-input,
+.forge-form-row--disabled .u-input:hover {
+  background: rgba(255,255,255,.012);
+  border-color: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.25);
+  cursor: not-allowed;
+}
+.forge-form-row--disabled .u-input::placeholder {
+  color: rgba(255,255,255,.18);
+  font-style: italic;
+}
+.forge-form-row-tag {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* ── Badge de event type (workspace LQL · IOA) ─────────────── */
+.forge-ioa-event-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 14px;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .1px;
+  color: rgba(var(--teal-rgb),.85);
+  background: rgba(var(--teal-rgb),.10);
+  border: 1px solid rgba(var(--teal-rgb),.22);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* ── Chips multi-select (ActionType en File / Registry) ───── */
+.forge-ioa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0;
+}
+.forge-ioa-chip {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.07);
+  color: rgba(255,255,255,.55);
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .1px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.forge-ioa-chip:hover:not(.active) {
+  border-color: rgba(255,255,255,.18);
+  color: var(--text);
+}
+.forge-ioa-chip.active {
+  background: rgba(var(--teal-rgb),.16);
+  border-color: rgba(var(--teal-rgb),.4);
+  color: rgba(var(--teal-rgb),.98);
+  font-weight: 600;
 }
 .forge-ws-textarea {
   flex: 1;
