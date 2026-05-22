@@ -6,7 +6,7 @@
   <title>Query Forge — Hunting Query Generator</title>
   <meta name="description" content="Generador de queries de hunting parametrizadas (KQL · CSQL · XQL) a partir de IOCs.">
   <link rel="stylesheet" href="css/base.css?v=4">
-  <link rel="stylesheet" href="css/forge.css?v=10">
+  <link rel="stylesheet" href="css/forge.css?v=11">
 </head>
 <body>
 
@@ -650,13 +650,20 @@
       <div id="forge-workspace-cs-ioa" class="forge-ws">
         <div class="forge-ws-header">
           <span class="forge-ws-title">LQL · IOA Hunter</span>
-          <span class="forge-ioa-event-badge" title="Event type — único en v1">ProcessRollup2</span>
+          <div class="forge-ioa-tables" role="tablist" aria-label="Event type">
+            <button class="forge-ioa-table-btn active" data-table="process" onclick="forgeIoaLqlSelectTable('process')" title="ProcessRollup2">Proceso</button>
+            <button class="forge-ioa-table-btn"        data-table="network" onclick="forgeIoaLqlSelectTable('network')" title="NetworkConnectIP4 / IP6">Red</button>
+            <button class="forge-ioa-table-btn"        data-table="dns"     onclick="forgeIoaLqlSelectTable('dns')"     title="DnsRequest">DNS</button>
+            <button class="forge-ioa-table-btn"        data-table="asep"    onclick="forgeIoaLqlSelectTable('asep')"    title="AsepValueUpdate (solo Windows)">ASEP</button>
+          </div>
           <button class="forge-help-btn" onclick="forgeIoaLqlToggleHelp(this)" title="Cómo funciona" aria-label="Cómo funciona"><i data-lucide="circle-help"></i></button>
         </div>
         <div class="forge-ws-body">
           <div class="forge-ws-input-col forge-ws-input-col-form">
             <div class="forge-form">
-              <div id="forge-ioa-lql-form" class="forge-ioa-form">
+
+              <!-- Form: Proceso (ProcessRollup2) -->
+              <div id="forge-ioa-lql-form-process" class="forge-ioa-form">
                 <div class="forge-form-section">
                   <div class="forge-form-section-title">Comportamiento</div>
                   <div class="forge-form-row forge-form-row--disabled" title="Disponible en v2 (requiere join entre eventos)">
@@ -734,9 +741,140 @@
                     <input id="ioa-lql-path" class="u-input" type="text" placeholder="\Users\Public\, \ProgramData\">
                   </div>
                 </div>
+              </div>
 
+              <!-- Form: Red (NetworkConnectIP4 / NetworkConnectIP6) -->
+              <div id="forge-ioa-lql-form-network" class="forge-ioa-form" style="display:none">
                 <div class="forge-form-section">
-                  <div class="forge-form-section-title">Metadata (header)</div>
+                  <div class="forge-form-section-title">Comportamiento</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-lql-net-remote-ip">IP remota</label>
+                      <div class="forge-ioa-join" data-target="ioa-lql-net-remote-ip" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-lql-net-remote-ip" class="u-input" type="text" placeholder="8.8.8.8, 2001:db8::1">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-lql-net-remote-port">Puerto remoto</label>
+                      <div class="forge-ioa-join" data-target="ioa-lql-net-remote-port" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-lql-net-remote-port" class="u-input" type="text" placeholder="443, 4444, 8080">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-lql-net-protocol">Protocolo</label>
+                      <div class="forge-ioa-join" data-target="ioa-lql-net-protocol" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-lql-net-protocol" class="u-input" type="text" placeholder="6 (TCP), 17 (UDP)">
+                  </div>
+                  <div class="forge-form-hint">
+                    Filtra <code>NetworkConnectIP4</code> y <code>NetworkConnectIP6</code>. El proceso iniciador (<code>ImageFileName</code>/<code>CommandLine</code>) requiere join con <code>ProcessRollup2</code> — disponible en v2.1.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form: DNS (DnsRequest) -->
+              <div id="forge-ioa-lql-form-dns" class="forge-ioa-form" style="display:none">
+                <div class="forge-form-section">
+                  <div class="forge-form-section-title">Comportamiento</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-lql-dns-domain">Dominio consultado</label>
+                      <div class="forge-form-row-toggles">
+                        <div class="forge-ioa-mode" data-target="ioa-lql-dns-domain" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                          <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                          <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                        </div>
+                        <div class="forge-ioa-join" data-target="ioa-lql-dns-domain" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                    </div>
+                    <input id="ioa-lql-dns-domain" class="u-input" type="text" placeholder="evil.com, .top, .club">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-lql-dns-request-type">Tipo de consulta</label>
+                      <div class="forge-ioa-join" data-target="ioa-lql-dns-request-type" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-lql-dns-request-type" class="u-input" type="text" placeholder="1 (A), 28 (AAAA), 252 (AXFR)">
+                  </div>
+                  <div class="forge-form-hint">
+                    Filtra <code>DnsRequest</code>. El proceso que pide la resolución (<code>ImageFileName</code>) requiere join con <code>ProcessRollup2</code> — disponible en v2.1.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form: ASEP (AsepValueUpdate — solo Windows) -->
+              <div id="forge-ioa-lql-form-asep" class="forge-ioa-form" style="display:none">
+                <div class="forge-form-section">
+                  <div class="forge-form-section-title">Comportamiento</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-lql-asep-reg-key">Clave del registro</label>
+                      <div class="forge-ioa-join" data-target="ioa-lql-asep-reg-key" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-lql-asep-reg-key" class="u-input" type="text" placeholder="\Windows\CurrentVersion\Run, Winlogon">
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-asep-reg-value-name">Nombre del valor</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-lql-asep-reg-value-name" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-lql-asep-reg-value-name" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-asep-reg-value-name" class="u-input" type="text" placeholder="UpdateChecker, Shell, Userinit">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-asep-reg-value-data">Datos del valor</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-lql-asep-reg-value-data" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-lql-asep-reg-value-data" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-asep-reg-value-data" class="u-input" type="text" placeholder="powershell, rundll32, \Users\Public\">
+                    </div>
+                  </div>
+                  <div class="forge-form-hint">
+                    Solo emite eventos cuando se modifica un <em>autostart extension point</em> (Run, RunOnce, Winlogon, services autorun, etc.). Solo Windows.
+                  </div>
+                </div>
+              </div>
+
+              <div class="forge-form-section">
+                <div class="forge-form-section-title">Metadata (header)</div>
                   <div class="forge-form-row">
                     <label class="tlab-config-label" for="ioa-lql-hypothesis">Nombre hipótesis</label>
                     <input id="ioa-lql-hypothesis" class="u-input" type="text" placeholder="Office spawning interpretes">
@@ -767,7 +905,6 @@
                     </select>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
           <div class="forge-ws-output-col">
@@ -825,17 +962,20 @@
   <div id="forge-ioa-lql-help-popover" class="forge-help-popover" hidden>
     <div class="forge-help-title">Cómo funciona (LQL)</div>
     <ul class="forge-help-list">
-      <li><strong>Event type</strong>: <code>ProcessRollup2</code> en v1. Abuelo y Cmdline padre quedan disabled (requieren <em>join</em> entre eventos — v2).</li>
-      <li><strong>Plataforma</strong>: se traduce a <code>event_platform=Win/Lin/Mac</code>. "Todas" omite la línea.</li>
+      <li><strong>Event type</strong>: elige en el segmented control del header — <code>Proceso</code> (ProcessRollup2), <code>Red</code> (NetworkConnectIP4/IP6), <code>DNS</code> (DnsRequest) o <code>ASEP</code> (AsepValueUpdate, solo persistencia/autostart, Windows).</li>
+      <li><strong>Join entre eventos</strong>: filtrar por proceso/cmdline en Red/DNS/ASEP requiere join con <code>ProcessRollup2</code> vía <code>ContextProcessId = TargetProcessId</code>. Pendiente para v2.1. Lo mismo aplica a Abuelo y Cmdline padre en Proceso.</li>
+      <li><strong>Plataforma</strong>: se traduce a <code>event_platform=Win/Lin/Mac</code>. "Todas" omite la línea. En ASEP se fuerza Windows.</li>
       <li><strong>Lookback</strong>: se renderiza como <code>setTimeInterval(start=Xd)</code> en el preámbulo. Override del time picker de la UI de LogScale.</li>
-      <li><strong>Todos los filtros son regex case-insensitive</strong> (<code>/patrón/i</code>). El renderer escapa puntos y barras automáticamente.</li>
+      <li><strong>Filtros de texto</strong> son regex case-insensitive (<code>/patrón/i</code>). El renderer escapa puntos y barras automáticamente.</li>
+      <li><strong>Filtros numéricos</strong> (puerto, protocolo, tipo de consulta DNS) usan <code>=</code> o <code>in(field, values=[...])</code> sin regex.</li>
+      <li><strong>IPs remotas</strong>: cada valor se compara con <code>RemoteAddressIP4</code> <em>o</em> <code>RemoteAddressIP6</code> con anclas exactas para evitar coincidencias parciales.</li>
       <li><strong>Chip Y / O</strong>: igual que en KQL. Los OR se agrupan en un bloque <code>| (a or b or c)</code>.</li>
-      <li><strong>Múltiples valores</strong>: coma. Se renderizan como alternancia <code>(v1|v2|v3)</code>. En cmdline con modo "Todos" se expanden a varias líneas.</li>
+      <li><strong>Múltiples valores</strong>: coma. Texto se renderiza como alternancia <code>(v1|v2|v3)</code>. En cmdline con modo "Todos" se expanden a varias líneas.</li>
     </ul>
   </div>
 
   <script src="js/lucide.min.js?v=1"></script>
-  <script src="js/forge.js?v=12"></script>
+  <script src="js/forge.js?v=13"></script>
   <script src="js/core.js?v=2"></script>
 
 </body>

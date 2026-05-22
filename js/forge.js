@@ -311,7 +311,7 @@ function forgeCsTemplate(type, iocs, lb) {
     case 'ip':
       return 'setTimeInterval(start=' + lb + ')\n' +
         'LET IpsIOC = array(\n' + arr + '\n);\n\n' +
-        '#event_simpleName in ("NetworkConnect", "NetworkConnectIP4")\n' +
+        '#event_simpleName = "NetworkConnectIP4"\n' +
         '| RemoteAddressIP4 in(IpsIOC)\n' +
         '| table([\n' +
         '    @timestamp,\n' +
@@ -1235,37 +1235,100 @@ function forgeIoaCloseHelp(e) {
    Solo cambia la Capa 3: regex case-insensitive, sin operadores
    discretos. Lookback se rinde como setTimeInterval(start=Xd). */
 
-var IOA_LQL = {
-  eventType: 'ProcessRollup2',
-  fields: [
-    { id:'parent',  input:'ioa-lql-parent',  kql:'ParentBaseFileName', kind:'lql-exact' },
-    { id:'process', input:'ioa-lql-process', kql:'ImageFileName',      kind:'lql-image' },
-    { id:'cmdline', input:'ioa-lql-cmdline', kql:'CommandLine',        kind:'lql-cmdline' },
-    { id:'user',    input:'ioa-lql-user',    kql:'UserName',           kind:'lql-exact' },
-    { id:'path',    input:'ioa-lql-path',    kql:'ImageFileName',      kind:'lql-path' }
-  ],
-  selectFields: [
-    '@timestamp','aid','ComputerName','UserName',
-    'ParentBaseFileName','ImageFileName','CommandLine','SHA256HashData'
-  ]
+/* Multi-tabla. eventType puede ser string ('ProcessRollup2') o array
+   (['NetworkConnectIP4','NetworkConnectIP6']) — el renderer produce
+   '#event_simpleName=X' o '#event_simpleName in (...)' según el caso.
+   platformLock fuerza event_platform y bloquea el selector (ASEP=Win).
+   Kinds nuevos: lql-int (numérico), lql-ip (dual IPv4/IPv6 OR). */
+var IOA_LQL_TABLES = {
+  process: {
+    label: 'Proceso',
+    eventType: 'ProcessRollup2',
+    formId: 'forge-ioa-lql-form-process',
+    fields: [
+      { id:'parent',  input:'ioa-lql-parent',  kql:'ParentBaseFileName', kind:'lql-exact' },
+      { id:'process', input:'ioa-lql-process', kql:'ImageFileName',      kind:'lql-image' },
+      { id:'cmdline', input:'ioa-lql-cmdline', kql:'CommandLine',        kind:'lql-cmdline' },
+      { id:'user',    input:'ioa-lql-user',    kql:'UserName',           kind:'lql-exact' },
+      { id:'path',    input:'ioa-lql-path',    kql:'ImageFileName',      kind:'lql-path' }
+    ],
+    selectFields: [
+      '@timestamp','aid','ComputerName','UserName',
+      'ParentBaseFileName','ImageFileName','CommandLine','SHA256HashData'
+    ]
+  },
+  network: {
+    label: 'Red',
+    eventType: ['NetworkConnectIP4','NetworkConnectIP6'],
+    formId: 'forge-ioa-lql-form-network',
+    fields: [
+      { id:'remote_ip',   input:'ioa-lql-net-remote-ip',   kind:'lql-ip',
+        kqlPair: ['RemoteAddressIP4','RemoteAddressIP6'] },
+      { id:'remote_port', input:'ioa-lql-net-remote-port', kql:'RemotePort', kind:'lql-int' },
+      { id:'protocol',    input:'ioa-lql-net-protocol',    kql:'Protocol',   kind:'lql-int' }
+    ],
+    selectFields: [
+      '@timestamp','aid','ComputerName',
+      'RemoteAddressIP4','RemoteAddressIP6','RemotePort','Protocol',
+      'LocalAddressIP4','LocalPort','ContextProcessId'
+    ]
+  },
+  dns: {
+    label: 'DNS',
+    eventType: 'DnsRequest',
+    formId: 'forge-ioa-lql-form-dns',
+    fields: [
+      { id:'domain',       input:'ioa-lql-dns-domain',       kql:'DomainName',  kind:'lql-cmdline' },
+      { id:'request_type', input:'ioa-lql-dns-request-type', kql:'RequestType', kind:'lql-int' }
+    ],
+    selectFields: [
+      '@timestamp','aid','ComputerName',
+      'DomainName','RequestType','FirstIP4Record','CNAMERecords','ContextProcessId'
+    ]
+  },
+  asep: {
+    label: 'ASEP',
+    eventType: 'AsepValueUpdate',
+    formId: 'forge-ioa-lql-form-asep',
+    platformLock: 'Win',
+    fields: [
+      { id:'reg_key',        input:'ioa-lql-asep-reg-key',        kql:'RegObjectName', kind:'lql-path' },
+      { id:'reg_value_name', input:'ioa-lql-asep-reg-value-name', kql:'RegValueName',  kind:'lql-cmdline' },
+      { id:'reg_value_data', input:'ioa-lql-asep-reg-value-data', kql:'RegStringValue',kind:'lql-cmdline' }
+    ],
+    selectFields: [
+      '@timestamp','aid','ComputerName',
+      'RegObjectName','RegValueName','RegStringValue','RegOperationType',
+      'AsepClass','AsepIndex','ContextProcessId'
+    ]
+  }
 };
+
+var _forgeIoaLqlActive = 'process';
+var _forgeIoaLqlPrevPlatform = null;  // recordar plataforma al entrar a ASEP
+
+function _forgeIoaLqlGetTable() {
+  return IOA_LQL_TABLES[_forgeIoaLqlActive] || IOA_LQL_TABLES.process;
+}
 
 
 /* ── Capa 1→2: leer formulario y construir modelo ─────────── */
 
 function _forgeIoaLqlReadModel() {
+  var tbl = _forgeIoaLqlGetTable();
   var model = {
-    eventType: IOA_LQL.eventType,
+    table:     tbl,
+    eventType: tbl.eventType,
     lookback:  '7d',
-    platform:  'Win',
+    platform:  tbl.platformLock || 'Win',
     filters:{}, modes:{}, joins:{}, meta:{}
   };
   var lb = document.getElementById('forge-ioa-lql-lookback');
   if (lb && lb.value) model.lookback = lb.value;
   var pf = document.getElementById('forge-ioa-lql-platform');
-  if (pf && pf.value) model.platform = pf.value;
+  if (pf && pf.value && !tbl.platformLock) model.platform = pf.value;
 
-  IOA_LQL.fields.forEach(function(f) {
+  tbl.fields.forEach(function(f) {
     var el = document.getElementById(f.input);
     if (!el) { model.filters[f.id] = []; return; }
     var values = _forgeIoaParseValues(el.value);
@@ -1291,7 +1354,7 @@ function _forgeIoaLqlReadModel() {
 }
 
 function _forgeIoaLqlHasAnyFilter(model) {
-  return IOA_LQL.fields.some(function(f){
+  return model.table.fields.some(function(f){
     return model.filters[f.id] && model.filters[f.id].length > 0;
   });
 }
@@ -1324,7 +1387,8 @@ function _forgeIoaLqlBuildClause(f, values, model) {
     return f.kql + '=/\\\\' + inner2 + '$/i';
   }
   if (f.kind === 'lql-cmdline') {
-    // CommandLine: contains. 'any' = alternancia; 'all' = N filtros separados con AND.
+    // CommandLine, DomainName, RegValueName, RegStringValue: contains.
+    // 'any' = alternancia; 'all' = N filtros separados con AND.
     if (!multi) return f.kql + '=/' + esc[0] + '/i';
     if (model.modes[f.id] === 'all') {
       return esc.map(function(v){ return f.kql + '=/' + v + '/i'; }).join('\n| ');
@@ -1332,9 +1396,23 @@ function _forgeIoaLqlBuildClause(f, values, model) {
     return f.kql + '=/' + esc.join('|') + '/i';
   }
   if (f.kind === 'lql-path') {
-    // ImageFileName como subcadena (sin anclas). Multi = alternancia.
+    // RegObjectName, ImageFileName como subcadena (sin anclas). Multi = alternancia.
     if (!multi) return f.kql + '=/' + esc[0] + '/i';
     return f.kql + '=/' + esc.join('|') + '/i';
+  }
+  if (f.kind === 'lql-int') {
+    // RemotePort, RequestType, Protocol: numérico, sin regex. Valores no escapados.
+    if (!multi) return f.kql + '=' + values[0];
+    return 'in(' + f.kql + ', values=[' + values.join(', ') + '])';
+  }
+  if (f.kind === 'lql-ip') {
+    // RemoteAddressIP4/IP6: anclas exactas (^$) para no matchear subcadenas de IP.
+    // Emite OR entre los dos campos. La IP que no corresponda al tipo del evento
+    // simplemente no matcheará — LogScale evalúa ambos sin coste relevante.
+    var pair  = f.kqlPair || ['RemoteAddressIP4','RemoteAddressIP6'];
+    var inner3 = multi ? '(' + esc.join('|') + ')' : esc[0];
+    var rgx   = '/^' + inner3 + '$/i';
+    return '(' + pair[0] + '=' + rgx + ' or ' + pair[1] + '=' + rgx + ')';
   }
   return null;
 }
@@ -1343,7 +1421,7 @@ function _forgeIoaLqlBuildWheres(model) {
   var andLines = [];
   var orClauses = [];
 
-  IOA_LQL.fields.forEach(function(f) {
+  model.table.fields.forEach(function(f) {
     var values = model.filters[f.id];
     if (!values || !values.length) return;
     var clause = _forgeIoaLqlBuildClause(f, values, model);
@@ -1382,7 +1460,7 @@ function _forgeIoaLqlBuildHeader(model) {
     if (model.meta.mitre_technique) parts.push(model.meta.mitre_technique);
     lines.push('// MITRE ATT&CK: ' + parts.join(' - '));
   }
-  lines.push('// EVENT TYPE: ' + model.eventType);
+  lines.push('// EVENT TYPE: ' + _forgeIoaLqlFormatEventType(model.eventType));
   if (model.meta.description) lines.push('// DESCRIPCIÓN: ' + model.meta.description);
   if (model.meta.fp)           lines.push('// FALSOS POSITIVOS: ' + model.meta.fp);
   if (model.meta.noise)        lines.push('// NIVEL DE RUIDO: ' + model.meta.noise);
@@ -1390,9 +1468,22 @@ function _forgeIoaLqlBuildHeader(model) {
   return lines.join('\n');
 }
 
-function _forgeIoaLqlBuildSelect() {
+function _forgeIoaLqlFormatEventType(et) {
+  return Array.isArray(et) ? et.join(', ') : et;
+}
+
+function _forgeIoaLqlBuildEventTypeLine(et) {
+  // Primera línea de la query (sin pipe inicial — usa el índice de tags).
+  if (Array.isArray(et)) {
+    var quoted = et.map(function(e){ return '"' + e + '"'; }).join(', ');
+    return '#event_simpleName in (' + quoted + ')';
+  }
+  return '#event_simpleName=' + et;
+}
+
+function _forgeIoaLqlBuildSelect(model) {
   // Mismo formato que los ejemplos del IOC Hunter CS — split en 2 líneas balanceadas.
-  var fields = IOA_LQL.selectFields;
+  var fields = model.table.selectFields;
   var half = Math.ceil(fields.length / 2);
   var line1 = fields.slice(0, half).join(', ');
   var line2 = fields.slice(half).join(', ');
@@ -1402,11 +1493,11 @@ function _forgeIoaLqlBuildSelect() {
 function _forgeIoaLqlRender(model) {
   var header = _forgeIoaLqlBuildHeader(model);
   var wheres = _forgeIoaLqlBuildWheres(model);
-  var sel    = _forgeIoaLqlBuildSelect();
+  var sel    = _forgeIoaLqlBuildSelect(model);
 
   var lines = [];
   lines.push('setTimeInterval(start=' + model.lookback + ')');
-  lines.push('#event_simpleName=' + model.eventType);
+  lines.push(_forgeIoaLqlBuildEventTypeLine(model.eventType));
   if (model.platform && model.platform !== 'all') {
     lines.push('| event_platform=' + model.platform);
   }
@@ -1436,15 +1527,16 @@ function forgeIoaLqlGenerate() {
 
 function _forgeIoaLqlDisplay(query, model) {
   var filterCount = 0;
-  IOA_LQL.fields.forEach(function(f){
+  model.table.fields.forEach(function(f){
     if (model.filters[f.id] && model.filters[f.id].length) filterCount++;
   });
+  var etLabel = _forgeIoaLqlFormatEventType(model.eventType);
   var statsEl = document.getElementById('forge-ioa-lql-stats');
   var outEl   = document.getElementById('forge-ioa-lql-output');
   if (statsEl) {
     statsEl.innerHTML = '<span class="forge-count">' + filterCount + ' filtro' +
       (filterCount === 1 ? '' : 's') + '</span>' +
-      ' <span class="forge-muted"> | event: ' + model.eventType + '</span>' +
+      ' <span class="forge-muted"> | event: ' + etLabel + '</span>' +
       ' <span class="forge-muted"> | plataforma: ' + (model.platform === 'all' ? 'todas' : model.platform) + '</span>' +
       ' <span class="forge-muted"> | lookback: ' + model.lookback + '</span>';
   }
@@ -1452,7 +1544,7 @@ function _forgeIoaLqlDisplay(query, model) {
     outEl.innerHTML =
       '<div class="forge-tab-viewer"><div class="forge-tab-pane active">' +
         '<div class="forge-tab-meta">' +
-          '<span class="forge-tab-meta-text">Query · ' + model.eventType + '</span>' +
+          '<span class="forge-tab-meta-text">Query · ' + etLabel + '</span>' +
           '<button class="forge-copy-btn" onclick="forgeIoaLqlCopy(\'forge-ioa-lql-pre\',this)">Copiar</button>' +
         '</div>' +
         '<pre id="forge-ioa-lql-pre" class="forge-pre">' + esc(query) + '</pre>' +
@@ -1471,11 +1563,14 @@ function forgeIoaLqlCopy(id, btn) {
 }
 
 function forgeIoaLqlClear() {
-  IOA_LQL.fields.forEach(function(f) {
-    var el = document.getElementById(f.input);
-    if (el) el.value = '';
-    delete _forgeIoaModes[f.input];
-    delete _forgeIoaJoins[f.input];
+  // Limpia los inputs de TODAS las tablas (no solo la activa) — equivalente a _forgeIoaClearInputs del KQL.
+  Object.keys(IOA_LQL_TABLES).forEach(function(key){
+    IOA_LQL_TABLES[key].fields.forEach(function(f) {
+      var el = document.getElementById(f.input);
+      if (el) el.value = '';
+      delete _forgeIoaModes[f.input];
+      delete _forgeIoaJoins[f.input];
+    });
   });
   ['hypothesis','mitre-tactic','mitre-technique','description','fp'].forEach(function(k){
     var el = document.getElementById('ioa-lql-' + k);
@@ -1491,6 +1586,47 @@ function forgeIoaLqlClear() {
   var outEl   = document.getElementById('forge-ioa-lql-output');
   if (statsEl) statsEl.textContent = '';
   if (outEl)   outEl.innerHTML = '';
+}
+
+
+/* ── Selector de tabla LQL (segmented control en header) ─────── */
+
+function forgeIoaLqlSelectTable(table) {
+  if (!IOA_LQL_TABLES[table]) return;
+  _forgeIoaLqlActive = table;
+
+  document.querySelectorAll('#forge-workspace-cs-ioa .forge-ioa-table-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.table === table);
+  });
+  Object.keys(IOA_LQL_TABLES).forEach(function(key){
+    var form = document.getElementById(IOA_LQL_TABLES[key].formId);
+    if (form) form.style.display = (key === table) ? '' : 'none';
+  });
+
+  // Lock de plataforma para tablas que solo aplican en Windows (ASEP).
+  var pf  = document.getElementById('forge-ioa-lql-platform');
+  var tbl = IOA_LQL_TABLES[table];
+  if (pf) {
+    if (tbl.platformLock) {
+      if (_forgeIoaLqlPrevPlatform === null) _forgeIoaLqlPrevPlatform = pf.value;
+      pf.value = tbl.platformLock;
+      pf.disabled = true;
+    } else {
+      if (_forgeIoaLqlPrevPlatform !== null) {
+        pf.value = _forgeIoaLqlPrevPlatform;
+        _forgeIoaLqlPrevPlatform = null;
+      }
+      pf.disabled = false;
+    }
+  }
+
+  var outEl   = document.getElementById('forge-ioa-lql-output');
+  var statsEl = document.getElementById('forge-ioa-lql-stats');
+  if (outEl)   outEl.innerHTML = '';
+  if (statsEl) statsEl.textContent = '';
+
+  _forgeIoaSyncAllToggles();
+  _forgeIoaSyncAllJoinToggles();
 }
 
 
