@@ -6,7 +6,7 @@
   <title>Query Forge — Hunting Query Generator</title>
   <meta name="description" content="Generador de queries de hunting parametrizadas (KQL · CSQL · XQL) a partir de IOCs.">
   <link rel="stylesheet" href="css/base.css?v=4">
-  <link rel="stylesheet" href="css/forge.css?v=11">
+  <link rel="stylesheet" href="css/forge.css?v=12">
 </head>
 <body>
 
@@ -176,6 +176,40 @@
               <div class="tlab-config-section">
                 <button class="tlab-analyze-btn" onclick="forgeXqlGenerate()"><i data-lucide="play"></i> Generar XQL</button>
                 <button class="forge-clear-link" onclick="forgeXqlClear()">Limpiar</button>
+              </div>
+            </div>
+          </div>
+          <div class="tlab-source-item" id="forge-src-xql-ioa" style="border-bottom:none">
+            <div class="tlab-source-head" onclick="forgeXqlSelectTool('xql-ioa')" id="forge-xql-ioa-head" style="padding-left:26px">
+              <span class="tlab-source-icon" id="forge-arrow-xql-ioa"><i data-lucide="chevron-right"></i></span>
+              <span class="tlab-source-name" style="font-size:12px">IOA Hunter</span>
+            </div>
+            <div class="tlab-source-body" id="forge-xql-ioa-body" style="display:none">
+              <div class="tlab-config-section">
+                <label class="tlab-config-label" for="forge-ioa-xql-platform">Plataforma</label>
+                <select id="forge-ioa-xql-platform" class="u-select">
+                  <option value="Win" selected>Windows</option>
+                  <option value="Lin">Linux</option>
+                  <option value="Mac">macOS</option>
+                  <option value="all">Todas</option>
+                </select>
+              </div>
+              <div class="tlab-config-section">
+                <label class="tlab-config-label" for="forge-ioa-xql-lookback">Lookback</label>
+                <select id="forge-ioa-xql-lookback" class="u-select">
+                  <option value="1h">1 hora</option>
+                  <option value="3h">3 horas</option>
+                  <option value="12h">12 horas</option>
+                  <option value="24h">24 horas</option>
+                  <option value="48h">48 horas</option>
+                  <option value="7d" selected>7 días</option>
+                  <option value="30d">30 días</option>
+                  <option value="90d">90 días</option>
+                </select>
+              </div>
+              <div class="tlab-config-section">
+                <button class="tlab-analyze-btn" onclick="forgeIoaXqlGenerate()"><i data-lucide="play"></i> Generar XQL</button>
+                <button class="forge-clear-link" onclick="forgeIoaXqlClear()">Limpiar</button>
               </div>
             </div>
           </div>
@@ -666,12 +700,15 @@
               <div id="forge-ioa-lql-form-process" class="forge-ioa-form">
                 <div class="forge-form-section">
                   <div class="forge-form-section-title">Comportamiento</div>
-                  <div class="forge-form-row forge-form-row--disabled" title="Disponible en v2 (requiere join entre eventos)">
+                  <div class="forge-form-row">
                     <div class="forge-form-row-head">
-                      <label class="tlab-config-label">Proceso abuelo</label>
-                      <span class="forge-form-row-tag">v2</span>
+                      <label class="tlab-config-label" for="ioa-lql-grandparent">Proceso abuelo</label>
+                      <div class="forge-ioa-join" data-target="ioa-lql-grandparent" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
                     </div>
-                    <input class="u-input" type="text" placeholder="(requiere join entre eventos — v2)" disabled>
+                    <input id="ioa-lql-grandparent" class="u-input" type="text" placeholder="explorer.exe, services.exe">
                   </div>
                   <div class="forge-form-subgroup">
                     <div class="forge-form-row">
@@ -684,12 +721,21 @@
                       </div>
                       <input id="ioa-lql-parent" class="u-input" type="text" placeholder="cmd.exe, powershell.exe">
                     </div>
-                    <div class="forge-form-row forge-form-row--child forge-form-row--disabled" title="Disponible en v2 (requiere join entre eventos)">
+                    <div class="forge-form-row forge-form-row--child">
                       <div class="forge-form-row-head">
-                        <label class="tlab-config-label">Cmdline padre</label>
-                        <span class="forge-form-row-tag">v2</span>
+                        <label class="tlab-config-label" for="ioa-lql-parent-cmdline">Cmdline padre</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-lql-parent-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-lql-parent-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
                       </div>
-                      <input class="u-input" type="text" placeholder="(requiere join entre eventos — v2)" disabled>
+                      <input id="ioa-lql-parent-cmdline" class="u-input" type="text" placeholder="/k, -ExecutionPolicy">
                     </div>
                   </div>
                   <div class="forge-form-subgroup">
@@ -777,8 +823,33 @@
                     </div>
                     <input id="ioa-lql-net-protocol" class="u-input" type="text" placeholder="6 (TCP), 17 (UDP)">
                   </div>
-                  <div class="forge-form-hint">
-                    Filtra <code>NetworkConnectIP4</code> y <code>NetworkConnectIP6</code>. El proceso iniciador (<code>ImageFileName</code>/<code>CommandLine</code>) requiere join con <code>ProcessRollup2</code> — disponible en v2.1.
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-net-proc-image">Proceso iniciador</label>
+                        <div class="forge-ioa-join" data-target="ioa-lql-net-proc-image" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-net-proc-image" class="u-input" type="text" placeholder="powershell.exe, rundll32.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-net-proc-cmdline">Cmdline iniciador</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-lql-net-proc-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-lql-net-proc-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-net-proc-cmdline" class="u-input" type="text" placeholder="-EncodedCommand, DownloadString">
+                    </div>
                   </div>
                 </div>
               </div>
@@ -813,8 +884,33 @@
                     </div>
                     <input id="ioa-lql-dns-request-type" class="u-input" type="text" placeholder="1 (A), 28 (AAAA), 252 (AXFR)">
                   </div>
-                  <div class="forge-form-hint">
-                    Filtra <code>DnsRequest</code>. El proceso que pide la resolución (<code>ImageFileName</code>) requiere join con <code>ProcessRollup2</code> — disponible en v2.1.
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-dns-proc-image">Proceso iniciador</label>
+                        <div class="forge-ioa-join" data-target="ioa-lql-dns-proc-image" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-dns-proc-image" class="u-input" type="text" placeholder="chrome.exe, powershell.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-dns-proc-cmdline">Cmdline iniciador</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-lql-dns-proc-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-lql-dns-proc-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-dns-proc-cmdline" class="u-input" type="text" placeholder="-EncodedCommand, DownloadString">
+                    </div>
                   </div>
                 </div>
               </div>
@@ -865,6 +961,34 @@
                         </div>
                       </div>
                       <input id="ioa-lql-asep-reg-value-data" class="u-input" type="text" placeholder="powershell, rundll32, \Users\Public\">
+                    </div>
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-asep-proc-image">Proceso iniciador</label>
+                        <div class="forge-ioa-join" data-target="ioa-lql-asep-proc-image" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-asep-proc-image" class="u-input" type="text" placeholder="installer.exe, msiexec.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-lql-asep-proc-cmdline">Cmdline iniciador</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-lql-asep-proc-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-lql-asep-proc-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-lql-asep-proc-cmdline" class="u-input" type="text" placeholder="/silent, /quiet">
                     </div>
                   </div>
                   <div class="forge-form-hint">
@@ -931,6 +1055,436 @@
         </div>
       </div>
 
+      <!-- XQL · IOA Hunter (Cortex XDR) -->
+      <div id="forge-workspace-xql-ioa" class="forge-ws">
+        <div class="forge-ws-header">
+          <span class="forge-ws-title">XQL · IOA Hunter</span>
+          <div class="forge-ioa-tables" role="tablist" aria-label="Event type">
+            <button class="forge-ioa-table-btn active" data-table="process"  onclick="forgeIoaXqlSelectTable('process')"  title="event_type = PROCESS">Proceso</button>
+            <button class="forge-ioa-table-btn"        data-table="network"  onclick="forgeIoaXqlSelectTable('network')"  title="event_type = NETWORK">Red</button>
+            <button class="forge-ioa-table-btn"        data-table="file"     onclick="forgeIoaXqlSelectTable('file')"     title="event_type = FILE">Fichero</button>
+            <button class="forge-ioa-table-btn"        data-table="registry" onclick="forgeIoaXqlSelectTable('registry')" title="event_type = REGISTRY">Registro</button>
+          </div>
+          <button class="forge-help-btn" onclick="forgeIoaXqlToggleHelp(this)" title="Cómo funciona" aria-label="Cómo funciona"><i data-lucide="circle-help"></i></button>
+        </div>
+        <div class="forge-ws-body">
+          <div class="forge-ws-input-col forge-ws-input-col-form">
+            <div class="forge-form">
+
+              <!-- Form: Proceso (event_type = PROCESS) -->
+              <div id="forge-ioa-xql-form-process" class="forge-ioa-form">
+                <div class="forge-form-section">
+                  <div class="forge-form-section-title">Comportamiento</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-grandparent">Proceso abuelo</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-grandparent" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-grandparent" class="u-input" type="text" placeholder="explorer.exe, services.exe">
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-parent">Proceso padre</label>
+                        <div class="forge-ioa-join" data-target="ioa-xql-parent" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-parent" class="u-input" type="text" placeholder="cmd.exe, powershell.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-parent-cmdline">Cmdline padre</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-xql-parent-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-xql-parent-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-parent-cmdline" class="u-input" type="text" placeholder="/k, -ExecutionPolicy">
+                    </div>
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-process">Proceso</label>
+                        <div class="forge-ioa-join" data-target="ioa-xql-process" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-process" class="u-input" type="text" placeholder="powershell.exe, pwsh.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-cmdline">Cmdline</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-xql-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-xql-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-cmdline" class="u-input" type="text" placeholder="Invoke-WebRequest, DownloadString">
+                    </div>
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-user">Usuario</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-user" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-user" class="u-input" type="text" placeholder="SYSTEM">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-path">Ruta</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-path" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-path" class="u-input" type="text" placeholder="\Users\Public\, \ProgramData\">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form: Red (event_type = NETWORK) -->
+              <div id="forge-ioa-xql-form-network" class="forge-ioa-form" style="display:none">
+                <div class="forge-form-section">
+                  <div class="forge-form-section-title">Red</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-net-remote-ip">IP remota</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-net-remote-ip" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-net-remote-ip" class="u-input" type="text" placeholder="8.8.8.8, 1.2.3.4">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-net-remote-url">URL / Hostname remoto</label>
+                      <div class="forge-form-row-toggles">
+                        <div class="forge-ioa-mode" data-target="ioa-xql-net-remote-url" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                          <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                          <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                        </div>
+                        <div class="forge-ioa-join" data-target="ioa-xql-net-remote-url" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-net-remote-url" class="u-input" type="text" placeholder="evil.com, beacon.net">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-net-remote-port">Puerto remoto</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-net-remote-port" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-net-remote-port" class="u-input" type="text" placeholder="443, 4444">
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-net-process">Proceso iniciador</label>
+                        <div class="forge-ioa-join" data-target="ioa-xql-net-process" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-net-process" class="u-input" type="text" placeholder="powershell.exe, rundll32.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-net-cmdline">Cmdline iniciador</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-xql-net-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-xql-net-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-net-cmdline" class="u-input" type="text" placeholder="DownloadString, -EncodedCommand">
+                    </div>
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-net-user">Usuario</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-net-user" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-net-user" class="u-input" type="text" placeholder="SYSTEM">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form: Fichero (event_type = FILE) -->
+              <div id="forge-ioa-xql-form-file" class="forge-ioa-form" style="display:none">
+                <div class="forge-form-section">
+                  <div class="forge-form-section-title">Fichero</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-file-action">Acción</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-file-action" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <div id="ioa-xql-file-action" class="forge-ioa-chips" role="group" aria-label="event_sub_type de FILE">
+                      <button class="forge-ioa-chip" data-value="FILE_CREATE_NEW" type="button">FILE_CREATE_NEW</button>
+                      <button class="forge-ioa-chip" data-value="FILE_WRITE"      type="button">FILE_WRITE</button>
+                      <button class="forge-ioa-chip" data-value="FILE_RENAME"     type="button">FILE_RENAME</button>
+                      <button class="forge-ioa-chip" data-value="FILE_REMOVE"     type="button">FILE_REMOVE</button>
+                    </div>
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-file-filename">Nombre archivo</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-file-filename" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-file-filename" class="u-input" type="text" placeholder="mimikatz.exe, secrets.zip">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-file-path">Ruta carpeta</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-file-path" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-file-path" class="u-input" type="text" placeholder="\Users\Public\, \ProgramData\">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-file-sha256">SHA256</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-file-sha256" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-file-sha256" class="u-input" type="text" placeholder="aaaa…, bbbb…">
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-file-process">Proceso iniciador</label>
+                        <div class="forge-ioa-join" data-target="ioa-xql-file-process" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-file-process" class="u-input" type="text" placeholder="powershell.exe, cmd.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-file-cmdline">Cmdline iniciador</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-xql-file-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-xql-file-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-file-cmdline" class="u-input" type="text" placeholder="DownloadString, Invoke-WebRequest">
+                    </div>
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-file-user">Usuario</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-file-user" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-file-user" class="u-input" type="text" placeholder="SYSTEM">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form: Registro (event_type = REGISTRY) -->
+              <div id="forge-ioa-xql-form-registry" class="forge-ioa-form" style="display:none">
+                <div class="forge-form-section">
+                  <div class="forge-form-section-title">Registro</div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-reg-action">Acción</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-reg-action" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <div id="ioa-xql-reg-action" class="forge-ioa-chips" role="group" aria-label="event_sub_type de REGISTRY">
+                      <button class="forge-ioa-chip" data-value="REGISTRY_CREATE_KEY"   type="button">REGISTRY_CREATE_KEY</button>
+                      <button class="forge-ioa-chip" data-value="REGISTRY_SET_VALUE"    type="button">REGISTRY_SET_VALUE</button>
+                      <button class="forge-ioa-chip" data-value="REGISTRY_DELETE_KEY"   type="button">REGISTRY_DELETE_KEY</button>
+                      <button class="forge-ioa-chip" data-value="REGISTRY_DELETE_VALUE" type="button">REGISTRY_DELETE_VALUE</button>
+                      <button class="forge-ioa-chip" data-value="REGISTRY_RENAME_KEY"   type="button">REGISTRY_RENAME_KEY</button>
+                    </div>
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-reg-key">Clave</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-reg-key" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-reg-key" class="u-input" type="text" placeholder="\CurrentVersion\Run, Winlogon">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-reg-value-name">Nombre del valor</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-reg-value-name" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-reg-value-name" class="u-input" type="text" placeholder="Updater, Shell, Userinit">
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-reg-value-data">Datos del valor</label>
+                      <div class="forge-form-row-toggles">
+                        <div class="forge-ioa-mode" data-target="ioa-xql-reg-value-data" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                          <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                          <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                        </div>
+                        <div class="forge-ioa-join" data-target="ioa-xql-reg-value-data" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-reg-value-data" class="u-input" type="text" placeholder="powershell, http, \Users\Public\">
+                  </div>
+                  <div class="forge-form-subgroup">
+                    <div class="forge-form-row">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-reg-process">Proceso iniciador</label>
+                        <div class="forge-ioa-join" data-target="ioa-xql-reg-process" role="group" aria-label="Combinar con Y u O">
+                          <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                          <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-reg-process" class="u-input" type="text" placeholder="reg.exe, powershell.exe">
+                    </div>
+                    <div class="forge-form-row forge-form-row--child">
+                      <div class="forge-form-row-head">
+                        <label class="tlab-config-label" for="ioa-xql-reg-cmdline">Cmdline iniciador</label>
+                        <div class="forge-form-row-toggles">
+                          <div class="forge-ioa-mode" data-target="ioa-xql-reg-cmdline" style="display:none" role="group" aria-label="Modo cualquiera/todos">
+                            <button class="forge-ioa-mode-btn active" data-mode="any" type="button">Cualquiera</button>
+                            <button class="forge-ioa-mode-btn"        data-mode="all" type="button">Todos</button>
+                          </div>
+                          <div class="forge-ioa-join" data-target="ioa-xql-reg-cmdline" role="group" aria-label="Combinar con Y u O">
+                            <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                            <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input id="ioa-xql-reg-cmdline" class="u-input" type="text" placeholder="add, /v Run">
+                    </div>
+                  </div>
+                  <div class="forge-form-row">
+                    <div class="forge-form-row-head">
+                      <label class="tlab-config-label" for="ioa-xql-reg-user">Usuario</label>
+                      <div class="forge-ioa-join" data-target="ioa-xql-reg-user" role="group" aria-label="Combinar con Y u O">
+                        <button class="forge-ioa-join-btn active" data-join="and" type="button">Y</button>
+                        <button class="forge-ioa-join-btn"        data-join="or"  type="button">O</button>
+                      </div>
+                    </div>
+                    <input id="ioa-xql-reg-user" class="u-input" type="text" placeholder="SYSTEM">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Metadata header XQL -->
+              <div class="forge-form-section">
+                <div class="forge-form-section-title">Metadata (header)</div>
+                <div class="forge-form-row">
+                  <label class="tlab-config-label" for="ioa-xql-hypothesis">Nombre hipótesis</label>
+                  <input id="ioa-xql-hypothesis" class="u-input" type="text" placeholder="Descarga remota con PowerShell">
+                </div>
+                <div class="forge-form-row">
+                  <label class="tlab-config-label" for="ioa-xql-mitre-tactic">MITRE Táctica</label>
+                  <input id="ioa-xql-mitre-tactic" class="u-input" type="text" placeholder="TA0002 Execution">
+                </div>
+                <div class="forge-form-row">
+                  <label class="tlab-config-label" for="ioa-xql-mitre-technique">MITRE Técnica</label>
+                  <input id="ioa-xql-mitre-technique" class="u-input" type="text" placeholder="T1059.001">
+                </div>
+                <div class="forge-form-row">
+                  <label class="tlab-config-label" for="ioa-xql-description">Descripción</label>
+                  <textarea id="ioa-xql-description" class="u-input forge-form-textarea" rows="2" placeholder="Qué detecta y por qué es sospechoso"></textarea>
+                </div>
+                <div class="forge-form-row">
+                  <label class="tlab-config-label" for="ioa-xql-fp">Falsos positivos</label>
+                  <textarea id="ioa-xql-fp" class="u-input forge-form-textarea" rows="2" placeholder="Scripts de actualización legítimos"></textarea>
+                </div>
+                <div class="forge-form-row">
+                  <label class="tlab-config-label" for="ioa-xql-noise">Nivel de ruido</label>
+                  <select id="ioa-xql-noise" class="u-select">
+                    <option value="" selected>—</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Medio">Medio</option>
+                    <option value="Bajo">Bajo</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          <div class="forge-ws-output-col">
+            <div id="forge-ioa-xql-stats" class="forge-ws-stats forge-muted"></div>
+            <div id="forge-ioa-xql-output" class="forge-ws-output"></div>
+          </div>
+        </div>
+        <div id="forge-ioa-xql-help-popover" class="forge-help-popover" hidden>
+          <h4>Cómo funciona el IOA Hunter XQL</h4>
+          <ul>
+            <li>Selecciona el <strong>event_type</strong> (Proceso · Red · Fichero · Registro) en el header.</li>
+            <li>Rellena los campos de comportamiento. Cada campo tiene chip <code>Y/O</code> para combinar con el resto.</li>
+            <li>Los campos cmdline ofrecen <code>Cualquiera</code> / <code>Todos</code> cuando hay 2+ valores.</li>
+            <li>El preámbulo <code>config case_sensitive = false</code> hace todas las comparaciones case-insensitive sin necesidad de regex.</li>
+            <li>Cortex XDR ya trae los 3 niveles (causality_actor → actor → action) en el mismo evento, así que abuelo + padre + proceso van todos lineales (sin joins).</li>
+          </ul>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -975,7 +1529,7 @@
   </div>
 
   <script src="js/lucide.min.js?v=1"></script>
-  <script src="js/forge.js?v=13"></script>
+  <script src="js/forge.js?v=15"></script>
   <script src="js/core.js?v=2"></script>
 
 </body>

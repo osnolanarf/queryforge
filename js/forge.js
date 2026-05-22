@@ -561,13 +561,14 @@ var _forgeCsActiveTool  = null;
 
 function _forgeCollapseXql() {
   if (!_forgeXqlActiveTool) return;
-  var body  = document.getElementById('forge-xql-ioc-body');
-  var arrow = document.getElementById('forge-arrow-xql-ioc');
-  var head  = document.getElementById('forge-xql-ioc-head');
+  var t = _forgeXqlActiveTool;
+  var body  = document.getElementById('forge-' + t + '-body');
+  var arrow = document.getElementById('forge-arrow-' + t);
+  var head  = document.getElementById('forge-' + t + '-head');
   if (body) body.style.display = 'none';
   if (arrow) arrow.style.transform = '';
   if (head)  head.style.background = 'transparent';
-  var ws = document.getElementById('forge-workspace-' + _forgeXqlActiveTool);
+  var ws = document.getElementById('forge-workspace-' + t);
   if (ws) ws.classList.remove('is-active');
   _forgeXqlActiveTool = null;
 }
@@ -638,15 +639,16 @@ function forgeXqlSelectTool(tool) {
   _forgeCollapseKql();
   _forgeCollapseCs();
 
-  var body  = document.getElementById('forge-xql-ioc-body');
-  var arrow = document.getElementById('forge-arrow-xql-ioc');
-  var head  = document.getElementById('forge-xql-ioc-head');
-
   if (_forgeXqlActiveTool === tool) {
     _forgeCollapseXql();
     document.getElementById('forge-workspace-empty').style.display = 'flex';
     return;
   }
+  if (_forgeXqlActiveTool) _forgeCollapseXql();
+
+  var body  = document.getElementById('forge-' + tool + '-body');
+  var arrow = document.getElementById('forge-arrow-' + tool);
+  var head  = document.getElementById('forge-' + tool + '-head');
 
   document.getElementById('forge-workspace-empty').style.display = 'none';
   var ws = document.getElementById('forge-workspace-' + tool);
@@ -1246,16 +1248,22 @@ var IOA_LQL_TABLES = {
     eventType: 'ProcessRollup2',
     formId: 'forge-ioa-lql-form-process',
     fields: [
-      { id:'parent',  input:'ioa-lql-parent',  kql:'ParentBaseFileName', kind:'lql-exact' },
-      { id:'process', input:'ioa-lql-process', kql:'ImageFileName',      kind:'lql-image' },
-      { id:'cmdline', input:'ioa-lql-cmdline', kql:'CommandLine',        kind:'lql-cmdline' },
-      { id:'user',    input:'ioa-lql-user',    kql:'UserName',           kind:'lql-exact' },
-      { id:'path',    input:'ioa-lql-path',    kql:'ImageFileName',      kind:'lql-path' }
+      { id:'grandparent',    input:'ioa-lql-grandparent',    kql:'GrandParentBaseFileName', kind:'lql-exact',   joinSource:'parent' },
+      { id:'parent',         input:'ioa-lql-parent',         kql:'ParentBaseFileName',      kind:'lql-exact' },
+      { id:'parent_cmdline', input:'ioa-lql-parent-cmdline', kql:'ParentCommandLine',       kind:'lql-cmdline', joinSource:'parent' },
+      { id:'process',        input:'ioa-lql-process',        kql:'ImageFileName',           kind:'lql-image' },
+      { id:'cmdline',        input:'ioa-lql-cmdline',        kql:'CommandLine',             kind:'lql-cmdline' },
+      { id:'user',           input:'ioa-lql-user',           kql:'UserName',                kind:'lql-exact' },
+      { id:'path',           input:'ioa-lql-path',           kql:'ImageFileName',           kind:'lql-path' }
     ],
     selectFields: [
       '@timestamp','aid','ComputerName','UserName',
       'ParentBaseFileName','ImageFileName','CommandLine','SHA256HashData'
-    ]
+    ],
+    // Campos que se inyectan en el select cuando el join 'parent' está activo
+    joinSelectFields: {
+      parent: ['GrandParentBaseFileName','ParentCommandLine']
+    }
   },
   network: {
     label: 'Red',
@@ -1265,13 +1273,18 @@ var IOA_LQL_TABLES = {
       { id:'remote_ip',   input:'ioa-lql-net-remote-ip',   kind:'lql-ip',
         kqlPair: ['RemoteAddressIP4','RemoteAddressIP6'] },
       { id:'remote_port', input:'ioa-lql-net-remote-port', kql:'RemotePort', kind:'lql-int' },
-      { id:'protocol',    input:'ioa-lql-net-protocol',    kql:'Protocol',   kind:'lql-int' }
+      { id:'protocol',    input:'ioa-lql-net-protocol',    kql:'Protocol',   kind:'lql-int' },
+      { id:'proc_image',   input:'ioa-lql-net-proc-image',   kql:'ContextImageFileName', kind:'lql-image',   joinSource:'context' },
+      { id:'proc_cmdline', input:'ioa-lql-net-proc-cmdline', kql:'ContextCommandLine',   kind:'lql-cmdline', joinSource:'context' }
     ],
     selectFields: [
       '@timestamp','aid','ComputerName',
       'RemoteAddressIP4','RemoteAddressIP6','RemotePort','Protocol',
       'LocalAddressIP4','LocalPort','ContextProcessId'
-    ]
+    ],
+    joinSelectFields: {
+      context: ['ContextImageFileName','ContextCommandLine']
+    }
   },
   dns: {
     label: 'DNS',
@@ -1279,12 +1292,17 @@ var IOA_LQL_TABLES = {
     formId: 'forge-ioa-lql-form-dns',
     fields: [
       { id:'domain',       input:'ioa-lql-dns-domain',       kql:'DomainName',  kind:'lql-cmdline' },
-      { id:'request_type', input:'ioa-lql-dns-request-type', kql:'RequestType', kind:'lql-int' }
+      { id:'request_type', input:'ioa-lql-dns-request-type', kql:'RequestType', kind:'lql-int' },
+      { id:'proc_image',   input:'ioa-lql-dns-proc-image',   kql:'ContextImageFileName', kind:'lql-image',   joinSource:'context' },
+      { id:'proc_cmdline', input:'ioa-lql-dns-proc-cmdline', kql:'ContextCommandLine',   kind:'lql-cmdline', joinSource:'context' }
     ],
     selectFields: [
       '@timestamp','aid','ComputerName',
       'DomainName','RequestType','FirstIP4Record','CNAMERecords','ContextProcessId'
-    ]
+    ],
+    joinSelectFields: {
+      context: ['ContextImageFileName','ContextCommandLine']
+    }
   },
   asep: {
     label: 'ASEP',
@@ -1294,13 +1312,18 @@ var IOA_LQL_TABLES = {
     fields: [
       { id:'reg_key',        input:'ioa-lql-asep-reg-key',        kql:'RegObjectName', kind:'lql-path' },
       { id:'reg_value_name', input:'ioa-lql-asep-reg-value-name', kql:'RegValueName',  kind:'lql-cmdline' },
-      { id:'reg_value_data', input:'ioa-lql-asep-reg-value-data', kql:'RegStringValue',kind:'lql-cmdline' }
+      { id:'reg_value_data', input:'ioa-lql-asep-reg-value-data', kql:'RegStringValue',kind:'lql-cmdline' },
+      { id:'proc_image',     input:'ioa-lql-asep-proc-image',     kql:'ContextImageFileName', kind:'lql-image',   joinSource:'context' },
+      { id:'proc_cmdline',   input:'ioa-lql-asep-proc-cmdline',   kql:'ContextCommandLine',   kind:'lql-cmdline', joinSource:'context' }
     ],
     selectFields: [
       '@timestamp','aid','ComputerName',
       'RegObjectName','RegValueName','RegStringValue','RegOperationType',
       'AsepClass','AsepIndex','ContextProcessId'
-    ]
+    ],
+    joinSelectFields: {
+      context: ['ContextImageFileName','ContextCommandLine']
+    }
   }
 };
 
@@ -1418,8 +1441,9 @@ function _forgeIoaLqlBuildClause(f, values, model) {
 }
 
 function _forgeIoaLqlBuildWheres(model) {
-  var andLines = [];
-  var orClauses = [];
+  var preAnd = [];   // AND sobre campos nativos (antes del join)
+  var postAnd = [];  // AND sobre campos del join
+  var orClauses = []; // OR siempre va al final (después del join si existe)
 
   model.table.fields.forEach(function(f) {
     var values = model.filters[f.id];
@@ -1428,21 +1452,87 @@ function _forgeIoaLqlBuildWheres(model) {
     if (!clause) return;
     if (model.joins[f.id] === 'or') {
       orClauses.push(clause);
+    } else if (f.joinSource) {
+      postAnd.push('| ' + clause);
     } else {
-      andLines.push('| ' + clause);
+      preAnd.push('| ' + clause);
     }
   });
 
-  // Bloque OR (2+ campos → un solo | (a or b or c); 1 → trata como AND)
+  // Bloque OR (2+ campos → un solo | (a or b or c); 1 → trata como AND postjoin si la cláusula es de join, prejoin si no)
+  var orBlock = null;
   if (orClauses.length === 1) {
-    andLines.push('| ' + orClauses[0]);
+    // promueve a AND. Si todos los OR son sobre joined fields → post. Si no → pre.
+    var solo = orClauses[0];
+    var isJoined = model.table.fields.some(function(f){
+      return f.joinSource && model.joins[f.id] === 'or' && model.filters[f.id] && model.filters[f.id].length;
+    });
+    (isJoined ? postAnd : preAnd).push('| ' + solo);
   } else if (orClauses.length > 1) {
     var indent = '   ';  // alinea 'or' bajo '(' tras '| '
-    var orBlock = '| (' + orClauses[0] + '\n' +
+    orBlock = '| (' + orClauses[0] + '\n' +
       orClauses.slice(1).map(function(c){ return indent + 'or ' + c; }).join('\n') + ')';
-    andLines.push(orBlock);
   }
-  return andLines;
+  return { preAnd: preAnd, postAnd: postAnd, orBlock: orBlock };
+}
+
+/* ── Helpers del join entre eventos (v2.1) ─────────────────── */
+
+function _forgeIoaLqlGetActiveJoinSources(model) {
+  // Devuelve los joinSource ('parent', 'context', …) que tienen al menos un campo con valores.
+  var sources = {};
+  model.table.fields.forEach(function(f){
+    if (f.joinSource && model.filters[f.id] && model.filters[f.id].length) {
+      sources[f.joinSource] = true;
+    }
+  });
+  return Object.keys(sources);
+}
+
+function _forgeIoaLqlBuildJoinBlock(joinKind, platform) {
+  /* Emite un bloque `| join(query={…}, field=[…], include=[…])` con renombrado
+     de campos del ProcessRollup2 lookup para evitar colisión con el evento principal.
+
+     - 'parent'  (self-join sobre ProcessRollup2): ParentProcessId del evento =
+       TargetProcessId del lookup. Trae GrandParentBaseFileName (= ParentBaseFileName del padre)
+       y ParentCommandLine (= CommandLine del padre).
+     - 'context' (join con ProcessRollup2 desde Network/DNS/ASEP): ContextProcessId del evento =
+       TargetProcessId del lookup. Trae ContextImageFileName y ContextCommandLine.
+
+     Plataforma se propaga a la subquery (filtra antes de unir → más rápido). */
+  var renames, fieldPair, includes;
+  if (joinKind === 'parent') {
+    renames = [
+      '| rename(field=TargetProcessId, as=_ParentTPID)',
+      '| rename(field=ParentBaseFileName, as=GrandParentBaseFileName)',
+      '| rename(field=CommandLine, as=ParentCommandLine)'
+    ];
+    fieldPair = '[ParentProcessId, _ParentTPID]';
+    includes  = '[GrandParentBaseFileName, ParentCommandLine]';
+  } else {
+    renames = [
+      '| rename(field=TargetProcessId, as=_ContextTPID)',
+      '| rename(field=ImageFileName, as=ContextImageFileName)',
+      '| rename(field=CommandLine, as=ContextCommandLine)'
+    ];
+    fieldPair = '[ContextProcessId, _ContextTPID]';
+    includes  = '[ContextImageFileName, ContextCommandLine]';
+  }
+
+  var qIndent = '              '; // 14 espacios — alinea bajo "query={"
+  var jIndent = '       ';        // 7 espacios — alinea bajo "(" de "| join("
+
+  var subLines = ['#event_simpleName=ProcessRollup2'];
+  if (platform && platform !== 'all') subLines.push('| event_platform=' + platform);
+  renames.forEach(function(r){ subLines.push(r); });
+
+  var subBlock = subLines.map(function(l, i){
+    return i === 0 ? l : qIndent + l;
+  }).join('\n');
+
+  return '| join(query={' + subBlock + '},\n' +
+         jIndent + 'field=' + fieldPair + ',\n' +
+         jIndent + 'include=' + includes + ')';
 }
 
 function _forgeIoaLqlBuildHeader(model) {
@@ -1483,7 +1573,16 @@ function _forgeIoaLqlBuildEventTypeLine(et) {
 
 function _forgeIoaLqlBuildSelect(model) {
   // Mismo formato que los ejemplos del IOC Hunter CS — split en 2 líneas balanceadas.
-  var fields = model.table.selectFields;
+  // Si hay joins activos, los campos renombrados del join se añaden al final del select
+  // (en bloque, conservando el orden de joinSelectFields).
+  var fields = model.table.selectFields.slice();
+  var activeSources = _forgeIoaLqlGetActiveJoinSources(model);
+  var joinSelect = model.table.joinSelectFields || {};
+  activeSources.forEach(function(src){
+    (joinSelect[src] || []).forEach(function(f){
+      if (fields.indexOf(f) < 0) fields.push(f);
+    });
+  });
   var half = Math.ceil(fields.length / 2);
   var line1 = fields.slice(0, half).join(', ');
   var line2 = fields.slice(half).join(', ');
@@ -1494,6 +1593,7 @@ function _forgeIoaLqlRender(model) {
   var header = _forgeIoaLqlBuildHeader(model);
   var wheres = _forgeIoaLqlBuildWheres(model);
   var sel    = _forgeIoaLqlBuildSelect(model);
+  var joinSources = _forgeIoaLqlGetActiveJoinSources(model);
 
   var lines = [];
   lines.push('setTimeInterval(start=' + model.lookback + ')');
@@ -1501,7 +1601,12 @@ function _forgeIoaLqlRender(model) {
   if (model.platform && model.platform !== 'all') {
     lines.push('| event_platform=' + model.platform);
   }
-  wheres.forEach(function(w){ lines.push(w); });
+  wheres.preAnd.forEach(function(w){ lines.push(w); });
+  joinSources.forEach(function(src){
+    lines.push(_forgeIoaLqlBuildJoinBlock(src, model.platform));
+  });
+  wheres.postAnd.forEach(function(w){ lines.push(w); });
+  if (wheres.orBlock) lines.push(wheres.orBlock);
   lines.push(sel);
 
   var query = lines.join('\n');
@@ -1654,6 +1759,461 @@ function forgeIoaLqlCloseHelp(e) {
   if (pop.contains(e.target) || (e.target.closest && e.target.closest('.forge-help-btn'))) return;
   pop.hidden = true;
   document.removeEventListener('mousedown', forgeIoaLqlCloseHelp);
+}
+
+
+/* ════════════════════════════════════════════════════
+   XQL — IOA Hunter (Cortex XDR · xdr_data)
+   Comparte modelo abstracto + globals _forgeIoaModes / _forgeIoaJoins.
+   Solo cambia el renderer (Capa 3).
+   ════════════════════════════════════════════════════ */
+
+var IOA_XQL_TABLES = {
+  process: {
+    label: 'Proceso',
+    eventType: 'PROCESS',
+    subtypeFixed: 'PROCESS_START',
+    formId: 'forge-ioa-xql-form-process',
+    fields: [
+      { id:'grandparent',    input:'ioa-xql-grandparent',    kql:'causality_actor_process_image_name', kind:'xql-exact' },
+      { id:'parent',         input:'ioa-xql-parent',         kql:'actor_process_image_name',          kind:'xql-exact' },
+      { id:'parent_cmdline', input:'ioa-xql-parent-cmdline', kql:'actor_process_command_line',        kind:'xql-cmdline' },
+      { id:'process',        input:'ioa-xql-process',        kql:'action_process_image_name',         kind:'xql-exact' },
+      { id:'cmdline',        input:'ioa-xql-cmdline',        kql:'action_process_image_command_line', kind:'xql-cmdline' },
+      { id:'user',           input:'ioa-xql-user',           kql:'action_process_username',           kind:'xql-exact' },
+      { id:'path',           input:'ioa-xql-path',           kql:'action_process_image_path',         kind:'xql-path' }
+    ],
+    fieldsOut: [
+      '_time', 'agent_hostname',
+      'causality_actor_process_image_name', 'causality_actor_process_command_line',
+      'actor_process_image_name', 'actor_process_command_line',
+      'action_process_image_name', 'action_process_image_command_line',
+      'action_process_username'
+    ],
+    fieldsGroups: [2, 2, 2, 2, 1]
+  },
+  network: {
+    label: 'Red',
+    eventType: 'NETWORK',
+    subtypeFixed: 'NETWORK_CONNECTION',
+    formId: 'forge-ioa-xql-form-network',
+    fields: [
+      { id:'remote_ip',   input:'ioa-xql-net-remote-ip',   kql:'action_remote_ip',          kind:'xql-exact' },
+      { id:'remote_url',  input:'ioa-xql-net-remote-url',  kql:'action_external_hostname',  kind:'xql-cmdline' },
+      { id:'remote_port', input:'ioa-xql-net-remote-port', kql:'action_remote_port',        kind:'xql-int' },
+      { id:'process',     input:'ioa-xql-net-process',     kql:'actor_process_image_name',  kind:'xql-exact' },
+      { id:'cmdline',     input:'ioa-xql-net-cmdline',     kql:'actor_process_command_line',kind:'xql-cmdline' },
+      { id:'user',        input:'ioa-xql-net-user',        kql:'actor_effective_username',  kind:'xql-exact' }
+    ],
+    fieldsOut: [
+      '_time', 'agent_hostname',
+      'action_remote_ip', 'action_remote_port', 'action_external_hostname',
+      'actor_process_image_name', 'actor_process_command_line',
+      'actor_effective_username'
+    ],
+    fieldsGroups: [2, 3, 2, 1]
+  },
+  file: {
+    label: 'Fichero',
+    eventType: 'FILE',
+    formId: 'forge-ioa-xql-form-file',
+    fields: [
+      { id:'action',   input:'ioa-xql-file-action',   kql:'event_sub_type',           kind:'xql-chips' },
+      { id:'filename', input:'ioa-xql-file-filename', kql:'action_file_name',         kind:'xql-exact' },
+      { id:'path',     input:'ioa-xql-file-path',     kql:'action_file_path',         kind:'xql-path' },
+      { id:'sha256',   input:'ioa-xql-file-sha256',   kql:'action_file_sha256',       kind:'xql-exact' },
+      { id:'process',  input:'ioa-xql-file-process',  kql:'actor_process_image_name', kind:'xql-exact' },
+      { id:'cmdline',  input:'ioa-xql-file-cmdline',  kql:'actor_process_command_line',kind:'xql-cmdline' },
+      { id:'user',     input:'ioa-xql-file-user',     kql:'actor_effective_username', kind:'xql-exact' }
+    ],
+    fieldsOut: [
+      '_time', 'agent_hostname',
+      'event_sub_type', 'action_file_name', 'action_file_path', 'action_file_sha256',
+      'actor_process_image_name', 'actor_process_command_line',
+      'actor_effective_username'
+    ],
+    fieldsGroups: [2, 4, 2, 1]
+  },
+  registry: {
+    label: 'Registro',
+    eventType: 'REGISTRY',
+    formId: 'forge-ioa-xql-form-registry',
+    fields: [
+      { id:'action',     input:'ioa-xql-reg-action',     kql:'event_sub_type',             kind:'xql-chips' },
+      { id:'key',        input:'ioa-xql-reg-key',        kql:'action_registry_key_name',   kind:'xql-path' },
+      { id:'value_name', input:'ioa-xql-reg-value-name', kql:'action_registry_value_name', kind:'xql-exact' },
+      { id:'value_data', input:'ioa-xql-reg-value-data', kql:'action_registry_data',       kind:'xql-cmdline' },
+      { id:'process',    input:'ioa-xql-reg-process',    kql:'actor_process_image_name',   kind:'xql-exact' },
+      { id:'cmdline',    input:'ioa-xql-reg-cmdline',    kql:'actor_process_command_line', kind:'xql-cmdline' },
+      { id:'user',       input:'ioa-xql-reg-user',       kql:'actor_effective_username',   kind:'xql-exact' }
+    ],
+    fieldsOut: [
+      '_time', 'agent_hostname',
+      'event_sub_type', 'action_registry_key_name', 'action_registry_value_name', 'action_registry_data',
+      'actor_process_image_name', 'actor_process_command_line',
+      'actor_effective_username'
+    ],
+    fieldsGroups: [2, 4, 2, 1]
+  }
+};
+
+var _forgeIoaXqlActive = 'process';
+
+function _forgeIoaXqlGetTable() {
+  return IOA_XQL_TABLES[_forgeIoaXqlActive] || IOA_XQL_TABLES.process;
+}
+
+
+/* ── Capa 1→2: leer formulario y construir modelo ─────────── */
+
+function _forgeIoaXqlReadModel() {
+  var tbl = _forgeIoaXqlGetTable();
+  var model = {
+    table:     tbl,
+    eventType: tbl.eventType,
+    lookback:  '7d',
+    platform:  'Win',
+    filters:{}, modes:{}, joins:{}, meta:{}
+  };
+  var lb = document.getElementById('forge-ioa-xql-lookback');
+  if (lb && lb.value) model.lookback = lb.value;
+  var pf = document.getElementById('forge-ioa-xql-platform');
+  if (pf && pf.value) model.platform = pf.value;
+
+  tbl.fields.forEach(function(f) {
+    var el = document.getElementById(f.input);
+    if (!el) { model.filters[f.id] = []; return; }
+    var values;
+    if (f.kind === 'xql-chips') {
+      values = Array.prototype.map.call(
+        el.querySelectorAll('.forge-ioa-chip.active'),
+        function(b){ return b.dataset.value; }
+      );
+    } else {
+      values = _forgeIoaParseValues(el.value);
+      var seen = {};
+      values = values.filter(function(v){
+        var k = v.toLowerCase();
+        if (seen[k]) return false;
+        seen[k] = true;
+        return true;
+      });
+    }
+    model.filters[f.id] = values;
+    if (f.kind === 'xql-cmdline') {
+      model.modes[f.id] = _forgeIoaModes[f.input] === 'all' ? 'all' : 'any';
+    }
+    model.joins[f.id] = _forgeIoaJoins[f.input] === 'or' ? 'or' : 'and';
+  });
+
+  ['hypothesis','mitre-tactic','mitre-technique','description','fp','noise'].forEach(function(key) {
+    var el = document.getElementById('ioa-xql-' + key);
+    if (el) model.meta[key.replace(/-/g,'_')] = el.value.trim();
+  });
+  return model;
+}
+
+function _forgeIoaXqlHasAnyFilter(model) {
+  return model.table.fields.some(function(f){
+    return model.filters[f.id] && model.filters[f.id].length > 0;
+  });
+}
+
+
+/* ── Capa 3: renderer XQL ─────────────────────────────────── */
+
+function _forgeIoaXqlEscape(v) {
+  // Escapa comillas dobles dentro del valor (las queries usan "…").
+  return String(v).replace(/"/g, '\\"');
+}
+
+function _forgeIoaXqlWrapOr(parts) {
+  // Une N partes con `or` en multi-línea, alineadas a 10 espacios (bajo '(' tras '| filter ').
+  // 1 parte → string crudo (sin paréntesis). 2+ → `(a\n          or b\n          or c)`.
+  if (parts.length === 1) return parts[0];
+  var indent = '          '; // 10 espacios
+  return '(' + parts[0] + '\n' +
+    parts.slice(1).map(function(p){ return indent + 'or ' + p; }).join('\n') + ')';
+}
+
+function _forgeIoaXqlPlatformEnum(platform) {
+  if (platform === 'Win') return 'ENUM.AGENT_OS_WINDOWS';
+  if (platform === 'Lin') return 'ENUM.AGENT_OS_LINUX';
+  if (platform === 'Mac') return 'ENUM.AGENT_OS_MACOS';
+  return null;  // 'all' → sin filtro
+}
+
+function _forgeIoaXqlBuildClause(f, values, model) {
+  /* Devuelve string (cláusula única) o array de strings (N cláusulas AND
+     a emitir como N `| filter` separados — solo cmdline modo 'all'). */
+  var multi = values.length > 1;
+
+  if (f.kind === 'xql-exact') {
+    var quoted = values.map(function(v){ return '"' + _forgeIoaXqlEscape(v) + '"'; });
+    if (!multi) return f.kql + ' = ' + quoted[0];
+    return f.kql + ' in (' + quoted.join(', ') + ')';
+  }
+  if (f.kind === 'xql-int') {
+    if (!multi) return f.kql + ' = ' + values[0];
+    return f.kql + ' in (' + values.join(', ') + ')';
+  }
+  if (f.kind === 'xql-cmdline') {
+    if (!multi) return f.kql + ' contains "' + _forgeIoaXqlEscape(values[0]) + '"';
+    var parts = values.map(function(v){ return f.kql + ' contains "' + _forgeIoaXqlEscape(v) + '"'; });
+    if (model.modes[f.id] === 'all') return parts;  // → N | filter separados
+    return _forgeIoaXqlWrapOr(parts);
+  }
+  if (f.kind === 'xql-path') {
+    if (!multi) return f.kql + ' contains "' + _forgeIoaXqlEscape(values[0]) + '"';
+    var p = values.map(function(v){ return f.kql + ' contains "' + _forgeIoaXqlEscape(v) + '"'; });
+    return _forgeIoaXqlWrapOr(p);
+  }
+  if (f.kind === 'xql-chips') {
+    // event_sub_type, valores tipo "FILE_CREATE_NEW" → "ENUM.FILE_CREATE_NEW"
+    var enums = values.map(function(v){ return 'ENUM.' + v; });
+    if (enums.length === 1) return f.kql + ' = ' + enums[0];
+    return f.kql + ' in (' + enums.join(', ') + ')';
+  }
+  return null;
+}
+
+function _forgeIoaXqlBuildFilters(model) {
+  var andLines = [];
+  var orClauses = [];
+
+  model.table.fields.forEach(function(f) {
+    var values = model.filters[f.id];
+    if (!values || !values.length) return;
+    var clause = _forgeIoaXqlBuildClause(f, values, model);
+    if (clause === null) return;
+    if (model.joins[f.id] === 'or') {
+      // En OR, si el clause es array (cmdline-all), unimos con AND inline ya que
+      // el campo entero participa en el OR exterior — sin partir en N filtros.
+      if (Array.isArray(clause)) clause = '(' + clause.join(' and ') + ')';
+      orClauses.push(clause);
+    } else {
+      if (Array.isArray(clause)) {
+        clause.forEach(function(c){ andLines.push('| filter ' + c); });
+      } else {
+        andLines.push('| filter ' + clause);
+      }
+    }
+  });
+
+  // Bloque OR: 1 → AND inline. 2+ → un único `| filter (a or b or c)` con
+  // continuación a 10 espacios (alinea bajo '(' tras '| filter ').
+  if (orClauses.length === 1) {
+    andLines.push('| filter ' + orClauses[0]);
+  } else if (orClauses.length > 1) {
+    var indent = '          ';
+    var orBlock = '| filter (' + orClauses[0] + '\n' +
+      orClauses.slice(1).map(function(c){ return indent + 'or ' + c; }).join('\n') + ')';
+    andLines.push(orBlock);
+  }
+  return andLines;
+}
+
+function _forgeIoaXqlBuildHeader(model) {
+  var hasAny = !!(model.meta.hypothesis || model.meta.mitre_tactic ||
+                  model.meta.mitre_technique || model.meta.description ||
+                  model.meta.fp || model.meta.noise);
+  if (!hasAny) return '';
+
+  var SEP = '// ═══════════════════════════════════════════════════════════════';
+  var lines = [SEP];
+  if (model.meta.hypothesis) lines.push('// NOMBRE: ' + model.meta.hypothesis);
+  if (model.meta.mitre_tactic || model.meta.mitre_technique) {
+    var parts = [];
+    if (model.meta.mitre_tactic)    parts.push(model.meta.mitre_tactic);
+    if (model.meta.mitre_technique) parts.push(model.meta.mitre_technique);
+    lines.push('// MITRE ATT&CK: ' + parts.join(' - '));
+  }
+  lines.push('// EVENT TYPE: ' + model.eventType);
+  if (model.meta.description) lines.push('// DESCRIPCIÓN: ' + model.meta.description);
+  if (model.meta.fp)           lines.push('// FALSOS POSITIVOS: ' + model.meta.fp);
+  if (model.meta.noise)        lines.push('// NIVEL DE RUIDO: ' + model.meta.noise);
+  lines.push(SEP);
+  return lines.join('\n');
+}
+
+function _forgeIoaXqlBuildFieldsLine(model) {
+  // | fields … en líneas agrupadas. Indent de continuación = 9 espacios (alinea bajo `_time`).
+  var groups = model.table.fieldsGroups || [model.table.fieldsOut.length];
+  var out = model.table.fieldsOut;
+  var indent = '         '; // 9 espacios
+  var lines = [];
+  var i = 0;
+  groups.forEach(function(n){
+    lines.push(out.slice(i, i+n).join(', '));
+    i += n;
+  });
+  if (i < out.length) lines.push(out.slice(i).join(', '));  // remanente defensivo
+  return '| fields ' + lines.map(function(l, idx){
+    return idx === 0 ? l : indent + l;
+  }).join(',\n');
+}
+
+function _forgeIoaXqlRender(model) {
+  var header = _forgeIoaXqlBuildHeader(model);
+  var filters = _forgeIoaXqlBuildFilters(model);
+
+  var lines = [];
+  lines.push('config case_sensitive = false timeframe = ' + model.lookback);
+  lines.push('| dataset = xdr_data');
+
+  // Línea de event_type + sub_type fijo (si aplica).
+  var evLine = '| filter event_type = ENUM.' + model.eventType;
+  if (model.table.subtypeFixed) {
+    evLine += ' and event_sub_type = ENUM.' + model.table.subtypeFixed;
+  }
+  lines.push(evLine);
+
+  // Plataforma (omitido si "Todas").
+  var platformEnum = _forgeIoaXqlPlatformEnum(model.platform);
+  if (platformEnum) {
+    lines.push('| filter agent_os_type = ' + platformEnum);
+  }
+
+  filters.forEach(function(f){ lines.push(f); });
+  lines.push(_forgeIoaXqlBuildFieldsLine(model));
+  lines.push('| sort desc _time');
+
+  var query = lines.join('\n');
+  return header ? header + '\n\n' + query : query;
+}
+
+
+/* ── Controlador: generar / limpiar / copiar / display ────── */
+
+function forgeIoaXqlGenerate() {
+  var model = _forgeIoaXqlReadModel();
+  if (!_forgeIoaXqlHasAnyFilter(model)) {
+    var statsEl = document.getElementById('forge-ioa-xql-stats');
+    var outEl   = document.getElementById('forge-ioa-xql-output');
+    if (statsEl) statsEl.textContent = 'Rellena al menos un campo de comportamiento.';
+    if (outEl)   outEl.innerHTML = '';
+    if (typeof toast === 'function') toast('Rellena al menos un campo de comportamiento', 'err');
+    return;
+  }
+  var query = _forgeIoaXqlRender(model);
+  _forgeIoaXqlDisplay(query, model);
+}
+
+function _forgeIoaXqlDisplay(query, model) {
+  var filterCount = 0;
+  model.table.fields.forEach(function(f){
+    if (model.filters[f.id] && model.filters[f.id].length) filterCount++;
+  });
+  var statsEl = document.getElementById('forge-ioa-xql-stats');
+  var outEl   = document.getElementById('forge-ioa-xql-output');
+  if (statsEl) {
+    statsEl.innerHTML = '<span class="forge-count">' + filterCount + ' filtro' +
+      (filterCount === 1 ? '' : 's') + '</span>' +
+      ' <span class="forge-muted"> | event: ' + model.eventType + '</span>' +
+      ' <span class="forge-muted"> | plataforma: ' + (model.platform === 'all' ? 'todas' : model.platform) + '</span>' +
+      ' <span class="forge-muted"> | timeframe: ' + model.lookback + '</span>';
+  }
+  if (outEl) {
+    outEl.innerHTML =
+      '<div class="forge-tab-viewer"><div class="forge-tab-pane active">' +
+        '<div class="forge-tab-meta">' +
+          '<span class="forge-tab-meta-text">Query · ' + model.eventType + '</span>' +
+          '<button class="forge-copy-btn" onclick="forgeIoaXqlCopy(\'forge-ioa-xql-pre\',this)">Copiar</button>' +
+        '</div>' +
+        '<pre id="forge-ioa-xql-pre" class="forge-pre">' + esc(query) + '</pre>' +
+      '</div></div>';
+  }
+}
+
+function forgeIoaXqlCopy(id, btn) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  copyToClipboard(el.textContent).then(function(){
+    var orig = btn.textContent;
+    btn.textContent = 'Copiado';
+    setTimeout(function(){ btn.textContent = orig; }, 1500);
+  });
+}
+
+function forgeIoaXqlClear() {
+  Object.keys(IOA_XQL_TABLES).forEach(function(key){
+    IOA_XQL_TABLES[key].fields.forEach(function(f) {
+      var el = document.getElementById(f.input);
+      if (!el) return;
+      if (f.kind === 'xql-chips') {
+        el.querySelectorAll('.forge-ioa-chip.active').forEach(function(b){ b.classList.remove('active'); });
+      } else {
+        el.value = '';
+      }
+      delete _forgeIoaModes[f.input];
+      delete _forgeIoaJoins[f.input];
+    });
+  });
+  ['hypothesis','mitre-tactic','mitre-technique','description','fp'].forEach(function(k){
+    var el = document.getElementById('ioa-xql-' + k);
+    if (el) el.value = '';
+  });
+  var noise = document.getElementById('ioa-xql-noise');
+  if (noise) noise.value = '';
+
+  _forgeIoaSyncAllToggles();
+  _forgeIoaSyncAllJoinToggles();
+
+  var statsEl = document.getElementById('forge-ioa-xql-stats');
+  var outEl   = document.getElementById('forge-ioa-xql-output');
+  if (statsEl) statsEl.textContent = '';
+  if (outEl)   outEl.innerHTML = '';
+}
+
+
+/* ── Selector de tabla XQL (segmented control en header) ──── */
+
+function forgeIoaXqlSelectTable(table) {
+  if (!IOA_XQL_TABLES[table]) return;
+  _forgeIoaXqlActive = table;
+
+  document.querySelectorAll('#forge-workspace-xql-ioa .forge-ioa-table-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.table === table);
+  });
+  Object.keys(IOA_XQL_TABLES).forEach(function(key){
+    var form = document.getElementById(IOA_XQL_TABLES[key].formId);
+    if (form) form.style.display = (key === table) ? '' : 'none';
+  });
+
+  var outEl   = document.getElementById('forge-ioa-xql-output');
+  var statsEl = document.getElementById('forge-ioa-xql-stats');
+  if (outEl)   outEl.innerHTML = '';
+  if (statsEl) statsEl.textContent = '';
+
+  _forgeIoaSyncAllToggles();
+  _forgeIoaSyncAllJoinToggles();
+}
+
+
+/* ── Help popover XQL ─────────────────────────────────────── */
+
+function forgeIoaXqlToggleHelp(btn) {
+  var pop = document.getElementById('forge-ioa-xql-help-popover');
+  if (!pop) return;
+  if (!pop.hidden) { pop.hidden = true; return; }
+  var r = btn.getBoundingClientRect();
+  pop.style.top  = (r.bottom + 8) + 'px';
+  pop.style.left = (r.right - 320) + 'px';
+  pop.hidden = false;
+  setTimeout(function(){
+    document.addEventListener('mousedown', forgeIoaXqlCloseHelp);
+  }, 0);
+}
+
+function forgeIoaXqlCloseHelp(e) {
+  var pop = document.getElementById('forge-ioa-xql-help-popover');
+  if (!pop || pop.hidden) {
+    document.removeEventListener('mousedown', forgeIoaXqlCloseHelp);
+    return;
+  }
+  if (pop.contains(e.target) || (e.target.closest && e.target.closest('.forge-help-btn'))) return;
+  pop.hidden = true;
+  document.removeEventListener('mousedown', forgeIoaXqlCloseHelp);
 }
 
 
