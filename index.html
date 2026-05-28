@@ -1474,13 +1474,15 @@
           </div>
         </div>
         <div id="forge-ioa-xql-help-popover" class="forge-help-popover" hidden>
-          <h4>Cómo funciona el IOA Hunter XQL</h4>
-          <ul>
-            <li>Selecciona el <strong>event_type</strong> (Proceso · Red · Fichero · Registro) en el header.</li>
-            <li>Rellena los campos de comportamiento. Cada campo tiene chip <code>Y/O</code> para combinar con el resto.</li>
-            <li>Los campos cmdline ofrecen <code>Cualquiera</code> / <code>Todos</code> cuando hay 2+ valores.</li>
-            <li>El preámbulo <code>config case_sensitive = false</code> hace todas las comparaciones case-insensitive sin necesidad de regex.</li>
-            <li>Cortex XDR ya trae los 3 niveles (causality_actor → actor → action) en el mismo evento, así que abuelo + padre + proceso van todos lineales (sin joins).</li>
+          <div class="forge-help-title">Cómo funciona (XQL)</div>
+          <ul class="forge-help-list">
+            <li><strong>Event type</strong>: elige en el segmented control del header — <code>Proceso</code> (PROCESS_START), <code>Red</code> (NETWORK_CONNECTION), <code>Fichero</code> (FILE_*) o <code>Registro</code> (REGISTRY_*).</li>
+            <li><strong>Sin joins</strong>: Cortex XDR trae los 3 niveles (<code>causality_actor</code> → <code>actor</code> → <code>action</code>) en el mismo evento <code>xdr_data</code>, así que abuelo + padre + proceso van lineales en la misma query.</li>
+            <li><strong>Plataforma</strong>: se traduce a <code>agent_os_type = ENUM.AGENT_OS_WINDOWS/LINUX/MACOS</code>. "Todas" omite la línea.</li>
+            <li><strong>Lookback</strong>: se renderiza como <code>config timeframe = Xd</code> en el preámbulo.</li>
+            <li><strong>Case insensitive</strong>: el preámbulo incluye <code>config case_sensitive = false</code> — todas las comparaciones <code>contains</code>/<code>=</code>/<code>in</code> son case-insensitive sin necesidad de regex.</li>
+            <li><strong>Chip Y / O</strong>: igual que en KQL/LQL. Los OR se agrupan en un bloque <code>| filter (a or b or c)</code>.</li>
+            <li><strong>Múltiples valores</strong>: coma. Texto exacto usa <code>in (…)</code>; texto parcial usa OR de <code>contains</code>; chips multi-select usan <code>in (ENUM.X, ENUM.Y)</code>.</li>
           </ul>
         </div>
       </div>
@@ -1529,7 +1531,7 @@
   </div>
 
   <script src="js/lucide.min.js?v=1"></script>
-  <script src="js/forge.js?v=15"></script>
+  <script src="js/forge.js?v=16"></script>
   <script src="js/core.js?v=2"></script>
 
 </body>

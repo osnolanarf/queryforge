@@ -288,84 +288,45 @@ var FORGE_CS_LABELS = {ip:'IPs', domain:'Dominios', md5:'MD5', sha256:'SHA256'};
 var FORGE_CS_ORDER  = ['domain', 'ip', 'sha256', 'md5'];
 
 function forgeCsTemplate(type, iocs, lb) {
-  var arr = iocs.map(function(i){ return '  "' + i + '"'; }).join(',\n');
+  // LQL real (Falcon LogScale):
+  //   - LET / array() / in(field, "v1","v2") NO funcionan con listas de strings ni con #event_simpleName.
+  //   - Listas → regex con alternancia /(v1|v2)/i con metachars escapados.
+  //   - Múltiples event_simpleName → OR explícito.
+  //   - table() → select() (legacy en comentario solo si hay limit=).
+  //   - sort(@timestamp desc) → sort(@timestamp, order=desc).
+  var escaped = iocs.map(_forgeIoaLqlEscapeRegex);
+  var rgxBody = escaped.length > 1 ? '(' + escaped.join('|') + ')' : escaped[0];
+
   switch(type) {
     case 'domain':
       return 'setTimeInterval(start=' + lb + ')\n' +
-        'LET DomainsIOC = array(\n' + arr + '\n);\n\n' +
-        '#event_simpleName in ("DnsRequest", "HttpRequest")\n' +
-        '| DomainName in(DomainsIOC)\n' +
-        '| table([\n' +
-        '    @timestamp,\n' +
-        '    ComputerName,\n' +
-        '    event_platform,\n' +
-        '    #event_simpleName,\n' +
-        '    DomainName,\n' +
-        '    RemoteAddressIP4,\n' +
-        '    RemotePort,\n' +
-        '    ImageFileName,\n' +
-        '    CommandLine\n' +
-        '  ])\n' +
-        '| sort(@timestamp desc)';
+        '#event_simpleName=DnsRequest OR #event_simpleName=HttpRequest\n' +
+        '| DomainName=/' + rgxBody + '/i\n' +
+        '| select([@timestamp, ComputerName, event_platform, #event_simpleName, DomainName, RemoteAddressIP4, RemotePort, ImageFileName, CommandLine])\n' +
+        '| sort(@timestamp, order=desc)';
 
     case 'ip':
       return 'setTimeInterval(start=' + lb + ')\n' +
-        'LET IpsIOC = array(\n' + arr + '\n);\n\n' +
-        '#event_simpleName = "NetworkConnectIP4"\n' +
-        '| RemoteAddressIP4 in(IpsIOC)\n' +
-        '| table([\n' +
-        '    @timestamp,\n' +
-        '    ComputerName,\n' +
-        '    event_platform,\n' +
-        '    #event_simpleName,\n' +
-        '    LocalAddressIP4,\n' +
-        '    LocalPort,\n' +
-        '    RemoteAddressIP4,\n' +
-        '    RemotePort,\n' +
-        '    ImageFileName,\n' +
-        '    CommandLine\n' +
-        '  ])\n' +
-        '| sort(@timestamp desc)';
+        '#event_simpleName=NetworkConnectIP4\n' +
+        '| RemoteAddressIP4=/' + rgxBody + '/\n' +
+        '| select([@timestamp, ComputerName, event_platform, #event_simpleName, LocalAddressIP4, LocalPort, RemoteAddressIP4, RemotePort, ImageFileName, CommandLine])\n' +
+        '| sort(@timestamp, order=desc)';
 
     case 'sha256':
       return 'setTimeInterval(start=' + lb + ')\n' +
-        'LET HashesSHA256 = array(\n' + arr + '\n);\n\n' +
-        '#event_simpleName in ("ProcessRollup2", "FileWritten", "FileOpenInfo")\n' +
-        '| event_platform = "Win"\n' +
-        '| SHA256HashData in(HashesSHA256)\n' +
-        '| table([\n' +
-        '    @timestamp,\n' +
-        '    ComputerName,\n' +
-        '    event_platform,\n' +
-        '    #event_simpleName,\n' +
-        '    FileName,\n' +
-        '    FilePath,\n' +
-        '    SHA256HashData,\n' +
-        '    MD5HashData,\n' +
-        '    ImageFileName,\n' +
-        '    CommandLine\n' +
-        '  ])\n' +
-        '| sort(@timestamp desc)';
+        '#event_simpleName=ProcessRollup2 OR #event_simpleName=FileWritten OR #event_simpleName=FileOpenInfo\n' +
+        '| event_platform=Win\n' +
+        '| SHA256HashData=/' + rgxBody + '/i\n' +
+        '| select([@timestamp, ComputerName, event_platform, #event_simpleName, FileName, FilePath, SHA256HashData, MD5HashData, ImageFileName, CommandLine])\n' +
+        '| sort(@timestamp, order=desc)';
 
     case 'md5':
       return 'setTimeInterval(start=' + lb + ')\n' +
-        'LET HashesMD5 = array(\n' + arr + '\n);\n\n' +
-        '#event_simpleName in ("ProcessRollup2", "FileWritten", "FileOpenInfo")\n' +
-        '| event_platform = "Win"\n' +
-        '| MD5HashData in(HashesMD5)\n' +
-        '| table([\n' +
-        '    @timestamp,\n' +
-        '    ComputerName,\n' +
-        '    event_platform,\n' +
-        '    #event_simpleName,\n' +
-        '    FileName,\n' +
-        '    FilePath,\n' +
-        '    SHA256HashData,\n' +
-        '    MD5HashData,\n' +
-        '    ImageFileName,\n' +
-        '    CommandLine\n' +
-        '  ])\n' +
-        '| sort(@timestamp desc)';
+        '#event_simpleName=ProcessRollup2 OR #event_simpleName=FileWritten OR #event_simpleName=FileOpenInfo\n' +
+        '| event_platform=Win\n' +
+        '| MD5HashData=/' + rgxBody + '/i\n' +
+        '| select([@timestamp, ComputerName, event_platform, #event_simpleName, FileName, FilePath, SHA256HashData, MD5HashData, ImageFileName, CommandLine])\n' +
+        '| sort(@timestamp, order=desc)';
 
     default: return '';
   }
@@ -1239,7 +1200,7 @@ function forgeIoaCloseHelp(e) {
 
 /* Multi-tabla. eventType puede ser string ('ProcessRollup2') o array
    (['NetworkConnectIP4','NetworkConnectIP6']) — el renderer produce
-   '#event_simpleName=X' o '#event_simpleName in (...)' según el caso.
+   '#event_simpleName=X' o '#event_simpleName=X OR #event_simpleName=Y' (in() no funciona sobre tags).
    platformLock fuerza event_platform y bloquea el selector (ASEP=Win).
    Kinds nuevos: lql-int (numérico), lql-ip (dual IPv4/IPv6 OR). */
 var IOA_LQL_TABLES = {
@@ -1564,9 +1525,9 @@ function _forgeIoaLqlFormatEventType(et) {
 
 function _forgeIoaLqlBuildEventTypeLine(et) {
   // Primera línea de la query (sin pipe inicial — usa el índice de tags).
+  // in() no funciona sobre #event_simpleName en LQL → siempre OR explícito.
   if (Array.isArray(et)) {
-    var quoted = et.map(function(e){ return '"' + e + '"'; }).join(', ');
-    return '#event_simpleName in (' + quoted + ')';
+    return et.map(function(e){ return '#event_simpleName=' + e; }).join(' OR ');
   }
   return '#event_simpleName=' + et;
 }
