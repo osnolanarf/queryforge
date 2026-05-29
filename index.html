@@ -1481,8 +1481,8 @@
             <li><strong>Plataforma</strong>: se traduce a <code>agent_os_type = ENUM.AGENT_OS_WINDOWS/LINUX/MACOS</code>. "Todas" omite la línea.</li>
             <li><strong>Lookback</strong>: se renderiza como <code>config timeframe = Xd</code> en el preámbulo.</li>
             <li><strong>Case insensitive</strong>: el preámbulo incluye <code>config case_sensitive = false</code> — todas las comparaciones <code>contains</code>/<code>=</code>/<code>in</code> son case-insensitive sin necesidad de regex.</li>
-            <li><strong>Chip Y / O</strong>: igual que en KQL/LQL. Los OR se agrupan en un bloque <code>| filter (a or b or c)</code>.</li>
-            <li><strong>Múltiples valores</strong>: coma. Texto exacto usa <code>in (…)</code>; texto parcial usa OR de <code>contains</code>; chips multi-select usan <code>in (ENUM.X, ENUM.Y)</code>.</li>
+            <li><strong>Switch Y / O</strong>: igual que en KQL/LQL. Los OR se agrupan en un bloque <code>| filter (a or b or c)</code>.</li>
+            <li><strong>Múltiples valores</strong>: coma. Texto exacto usa <code>in (…)</code>; texto parcial usa OR de <code>contains</code>; los selectores múltiples usan <code>in (ENUM.X, ENUM.Y)</code>.</li>
           </ul>
         </div>
       </div>
@@ -1506,7 +1506,7 @@
     <div class="forge-help-title">Cómo funciona</div>
     <ul class="forge-help-list">
       <li><strong>Rellena al menos un campo</strong> de comportamiento. Por defecto se combinan con <code>Y</code>.</li>
-      <li><strong>Chip Y / O</strong> al lado del label: marca <code>O</code> los campos que quieras agrupar en un bloque alternativo (ej: URL <code>O</code> IP).</li>
+      <li><strong>Switch Y / O</strong> al lado del label: marca <code>O</code> los campos que quieras agrupar en un bloque alternativo (ej: URL <code>O</code> IP).</li>
       <li><strong>Múltiples valores</strong>: sepáralos por coma. Ejemplo: <code>cmd.exe, powershell.exe</code>.</li>
       <li><strong>Espacios o comas literales</strong>: encierra el valor entre comillas para preservarlo tal cual. Ejemplo: <code>"c "</code> conserva el espacio final; <code>"foo, bar"</code> trata la coma como parte del valor.</li>
       <li><strong>PowerShell</strong> se normaliza automáticamente a sus 4 binarios (incluye <code>pwsh.exe</code>).</li>
@@ -1525,7 +1525,7 @@
       <li><strong>Filtros de texto</strong> son regex case-insensitive (<code>/patrón/i</code>). El renderer escapa puntos y barras automáticamente.</li>
       <li><strong>Filtros numéricos</strong> (puerto, protocolo, tipo de consulta DNS) usan <code>=</code> o <code>in(field, values=[...])</code> sin regex.</li>
       <li><strong>IPs remotas</strong>: cada valor se compara con <code>RemoteAddressIP4</code> <em>o</em> <code>RemoteAddressIP6</code> con anclas exactas para evitar coincidencias parciales.</li>
-      <li><strong>Chip Y / O</strong>: igual que en KQL. Los OR se agrupan en un bloque <code>| (a or b or c)</code>.</li>
+      <li><strong>Switch Y / O</strong>: igual que en KQL. Los OR se agrupan en un bloque <code>| (a or b or c)</code>.</li>
       <li><strong>Múltiples valores</strong>: coma. Texto se renderiza como alternancia <code>(v1|v2|v3)</code>. En cmdline con modo "Todos" se expanden a varias líneas.</li>
     </ul>
   </div>

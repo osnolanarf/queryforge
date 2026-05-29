@@ -29,7 +29,7 @@ Generador de queries de hunting parametrizadas para los principales SIEM/EDR. Co
   - **LQL (CrowdStrike, beta)**: Proceso (`ProcessRollup2`), Red (`NetworkConnectIP4`+`IP6`), DNS (`DnsRequest`) y ASEP (`AsepValueUpdate`, solo Windows). Incluye joins entre eventos — abuelo/parent_cmdline en proceso y proceso/cmdline iniciador en red, DNS y ASEP.
   - **XQL (Cortex XDR, beta)**: Proceso, Red, Fichero y Registro sobre `xdr_data` — los tres niveles (causality → actor → action) vienen nativos en el mismo evento, sin joins.
 - **Selectores múltiples** para `ActionType` en File y Registry (valores cerrados como `FileCreated`, `RegistryValueSet`).
-- **Chip Y / O por campo** — combina los filtros con AND por defecto; marca `O` los campos que quieras agrupar en un bloque alternativo (ej. `URL O IP`).
+- **Switch Y / O por campo** — combina los filtros con AND por defecto; marca `O` los campos que quieras agrupar en un bloque alternativo (ej. `URL O IP`).
 - **Toggle Cualquiera / Todos** (`has_any` vs `has_all`) en los campos cmdline cuando hay 2+ valores.
 - **Listas dinámicas inferidas**: separa por coma para generar `let Lista = dynamic([...])` (KQL) o alternancia regex (LQL).
 - **Parser tolerante a comillas**: encierra un valor entre `"…"` para preservar espacios y comas literales (p.ej. `cmdline = "c "` con espacio final intencional).
