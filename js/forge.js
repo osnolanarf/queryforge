@@ -299,30 +299,30 @@ function forgeCsTemplate(type, iocs, lb) {
 
   switch(type) {
     case 'domain':
-      return 'setTimeInterval(start=' + lb + ')\n' +
-        '#event_simpleName=DnsRequest OR #event_simpleName=HttpRequest\n' +
+      return 'setTimeInterval(start="' + lb + '")\n' +
+        '| #event_simpleName=DnsRequest OR #event_simpleName=HttpRequest\n' +
         '| DomainName=/' + rgxBody + '/i\n' +
         '| select([@timestamp, ComputerName, event_platform, #event_simpleName, DomainName, RemoteAddressIP4, RemotePort, ImageFileName, CommandLine])\n' +
         '| sort(@timestamp, order=desc)';
 
     case 'ip':
-      return 'setTimeInterval(start=' + lb + ')\n' +
-        '#event_simpleName=NetworkConnectIP4\n' +
+      return 'setTimeInterval(start="' + lb + '")\n' +
+        '| #event_simpleName=NetworkConnectIP4\n' +
         '| RemoteAddressIP4=/' + rgxBody + '/\n' +
         '| select([@timestamp, ComputerName, event_platform, #event_simpleName, LocalAddressIP4, LocalPort, RemoteAddressIP4, RemotePort, ImageFileName, CommandLine])\n' +
         '| sort(@timestamp, order=desc)';
 
     case 'sha256':
-      return 'setTimeInterval(start=' + lb + ')\n' +
-        '#event_simpleName=ProcessRollup2 OR #event_simpleName=FileWritten OR #event_simpleName=FileOpenInfo\n' +
+      return 'setTimeInterval(start="' + lb + '")\n' +
+        '| #event_simpleName=ProcessRollup2 OR #event_simpleName=FileWritten OR #event_simpleName=FileOpenInfo\n' +
         '| event_platform=Win\n' +
         '| SHA256HashData=/' + rgxBody + '/i\n' +
         '| select([@timestamp, ComputerName, event_platform, #event_simpleName, FileName, FilePath, SHA256HashData, MD5HashData, ImageFileName, CommandLine])\n' +
         '| sort(@timestamp, order=desc)';
 
     case 'md5':
-      return 'setTimeInterval(start=' + lb + ')\n' +
-        '#event_simpleName=ProcessRollup2 OR #event_simpleName=FileWritten OR #event_simpleName=FileOpenInfo\n' +
+      return 'setTimeInterval(start="' + lb + '")\n' +
+        '| #event_simpleName=ProcessRollup2 OR #event_simpleName=FileWritten OR #event_simpleName=FileOpenInfo\n' +
         '| event_platform=Win\n' +
         '| MD5HashData=/' + rgxBody + '/i\n' +
         '| select([@timestamp, ComputerName, event_platform, #event_simpleName, FileName, FilePath, SHA256HashData, MD5HashData, ImageFileName, CommandLine])\n' +
@@ -1524,7 +1524,7 @@ function _forgeIoaLqlFormatEventType(et) {
 }
 
 function _forgeIoaLqlBuildEventTypeLine(et) {
-  // Primera línea de la query (sin pipe inicial — usa el índice de tags).
+  // Filtro de event_simpleName (el pipe inicial lo añade el caller, tras setTimeInterval).
   // in() no funciona sobre #event_simpleName en LQL → siempre OR explícito.
   if (Array.isArray(et)) {
     return et.map(function(e){ return '#event_simpleName=' + e; }).join(' OR ');
@@ -1557,8 +1557,8 @@ function _forgeIoaLqlRender(model) {
   var joinSources = _forgeIoaLqlGetActiveJoinSources(model);
 
   var lines = [];
-  lines.push('setTimeInterval(start=' + model.lookback + ')');
-  lines.push(_forgeIoaLqlBuildEventTypeLine(model.eventType));
+  lines.push('setTimeInterval(start="' + model.lookback + '")');
+  lines.push('| ' + _forgeIoaLqlBuildEventTypeLine(model.eventType));
   if (model.platform && model.platform !== 'all') {
     lines.push('| event_platform=' + model.platform);
   }
