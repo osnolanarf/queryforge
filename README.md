@@ -9,8 +9,10 @@ Generador de queries de hunting parametrizadas para los principales SIEM/EDR. Co
 | Plataforma | Lenguaje | IOC Hunter | IOA Hunter |
 |---|---|---|---|
 | Microsoft Defender XDR | KQL | ✓ | ✓ — Process · Network · File · Registry |
-| CrowdStrike Falcon | CSQL / LQL (LogScale, NG-SIEM) | ✓ | ✓ — ProcessRollup2 |
-| Palo Alto Cortex XDR | XQL | ✓ | — |
+| CrowdStrike Falcon | CSQL / LQL (LogScale, NG-SIEM) | ✓ | 🧪 beta — Proceso · Red · DNS · ASEP |
+| Palo Alto Cortex XDR | XQL | ✓ | 🧪 beta — Proceso · Red · Fichero · Registro |
+
+> **🧪 Beta:** las queries de IOA Hunter para **CrowdStrike (LQL)** y **Cortex XDR (XQL)** están en fase beta. La generación es funcional pero todavía en validación — revisa la query antes de ejecutarla en producción. El IOA Hunter de Defender (KQL) y los tres IOC Hunter son estables.
 
 ## Cómo funciona
 
@@ -22,14 +24,17 @@ Generador de queries de hunting parametrizadas para los principales SIEM/EDR. Co
 
 **IOA Hunter** — describe un comportamiento (proceso, padre, abuelo, línea de comandos, usuario, ruta, registry, archivo…) y obtén la query lista para tu consola. Soporta:
 
-- **Multi-tabla** en KQL: `DeviceProcessEvents`, `DeviceNetworkEvents`, `DeviceFileEvents`, `DeviceRegistryEvents` — selector segmented en el header.
+- **Multi-tabla / multi-event_type** según plataforma — selector segmented en el header:
+  - **KQL (Defender)**: `DeviceProcessEvents`, `DeviceNetworkEvents`, `DeviceFileEvents`, `DeviceRegistryEvents`.
+  - **LQL (CrowdStrike, beta)**: Proceso (`ProcessRollup2`), Red (`NetworkConnectIP4`+`IP6`), DNS (`DnsRequest`) y ASEP (`AsepValueUpdate`, solo Windows). Incluye joins entre eventos — abuelo/parent_cmdline en proceso y proceso/cmdline iniciador en red, DNS y ASEP.
+  - **XQL (Cortex XDR, beta)**: Proceso, Red, Fichero y Registro sobre `xdr_data` — los tres niveles (causality → actor → action) vienen nativos en el mismo evento, sin joins.
 - **Chips multi-select** para `ActionType` en File y Registry (valores cerrados como `FileCreated`, `RegistryValueSet`).
 - **Chip Y / O por campo** — combina los filtros con AND por defecto; marca `O` los campos que quieras agrupar en un bloque alternativo (ej. `URL O IP`).
 - **Toggle Cualquiera / Todos** (`has_any` vs `has_all`) en los campos cmdline cuando hay 2+ valores.
 - **Listas dinámicas inferidas**: separa por coma para generar `let Lista = dynamic([...])` (KQL) o alternancia regex (LQL).
 - **Parser tolerante a comillas**: encierra un valor entre `"…"` para preservar espacios y comas literales (p.ej. `cmdline = "c "` con espacio final intencional).
 - **Normalización de PowerShell** automática a sus 4 binarios canónicos cuando el campo tiene un único valor PS.
-- **Plataforma seleccionable** (Windows / Linux / macOS / Todas) en el hunter LQL.
+- **Plataforma seleccionable** (Windows / Linux / macOS / Todas) en los hunters LQL y XQL.
 - **Header opcional** con MITRE ATT&CK, hipótesis, descripción, falsos positivos y nivel de ruido — solo se imprime si hay metadata real.
 
 Ambas herramientas: elige lookback y copia la query.
